@@ -1,17 +1,36 @@
 import cv2
+import csv
 import os
+import numpy as np
+import re
+from tqdm import tqdm
 
 
-def import_data(method):
-    data = list()
-    folders = os.listdir('dataset/data/{}/'.format(method))
-    for subfolder in folders:
-        entry = os.listdir('dataset/data/{}/{}'.format(method, subfolder))
-        print(subfolder)
+def import_data(type):
+    x = list()
+    y = list()
+    data = {}
+    y_dict = {}
+    i = 0
+    with open('dataset/LOC_synset_mapping.txt', newline='\n') as inputfile:
+        for i, row in enumerate(csv.reader(inputfile)):
+            label = str(row[0]).split(' ')[0]
+            y_dict[label] = i
+
+    folders = os.listdir('dataset/data/{}/'.format(type))
+    print("LOADING DATA (FODLERS)")
+    for subfolder in tqdm(folders):
+        entry = os.listdir('dataset/data/{}/{}'.format(type, subfolder))
         for image in entry:
-            picture = cv2.resize(cv2.imread('dataset/data/{}/{}/{}'.format(method, subfolder, image)), (256, 256))
-            data.append(picture.reshape(-1, 1))
+            picture = cv2.resize(cv2.imread('dataset/data/{}/{}/{}'.format(type, subfolder, image)), (256, 256))
+            label = (re.sub(r'_.*', "", image))
+            x.append(picture.reshape(-1, 1))
+            y_hot = np.zeros((len(y_dict), 1))
+            y_hot[y_dict[label]] = 1
+            y.append(y_hot)
 
+    data['x'] = x
+    data['y'] = y
     return data
 
 
