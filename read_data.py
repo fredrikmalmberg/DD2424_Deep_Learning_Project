@@ -11,14 +11,13 @@ def import_data(type):
     y = list()
     data = {}
     y_dict = {}
-    i = 0
     with open('dataset/LOC_synset_mapping.txt', newline='\n') as inputfile:
         for i, row in enumerate(csv.reader(inputfile)):
             label = str(row[0]).split(' ')[0]
             y_dict[label] = i
 
     folders = os.listdir('dataset/data/{}/'.format(type))
-    print("LOADING DATA (FODLERS)")
+    print("\n LOADING DATA {}".format(type))
     for subfolder in tqdm(folders):
         entry = os.listdir('dataset/data/{}/{}'.format(type, subfolder))
         for image in entry:

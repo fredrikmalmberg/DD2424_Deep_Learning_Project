@@ -3,7 +3,7 @@ import read_data
 
 def main():
     train = read_data.import_data('train')
-    # print(train['x'][0])
+    validation = read_data.import_data('validation')
     # read_data.print_picture(train[0][0])
 
 
