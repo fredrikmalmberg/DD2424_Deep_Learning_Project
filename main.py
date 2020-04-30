@@ -1,10 +1,15 @@
 import read_data
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+import tensorflow as tf
 
 
 def main():
     train = read_data.import_data('train')
-    # print(train['x'][0])
-    # read_data.print_picture(train[0][0])
+    # validation = read_data.import_data('validation')
+    # read_data.print_picture(train['x'][0])
+    tensor_data = tf.data.Dataset.from_tensor_slices((train['x'], train['y']))
+    print(tensor_data)
 
 
 if __name__ == '__main__':
