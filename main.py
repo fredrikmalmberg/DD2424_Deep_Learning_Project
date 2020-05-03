@@ -5,7 +5,6 @@ import tensorflow as tf
 
 
 def main():
-    # read_data.save_lab_figures('train')
     train = read_data.import_data('train')
     # validation = read_data.import_data('validation')
     # read_data.print_picture(train['x'][0])
