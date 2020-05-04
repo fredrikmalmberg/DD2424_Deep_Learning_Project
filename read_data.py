@@ -30,13 +30,16 @@ def import_data(dataset):
     x = np.zeros((n_images, 256, 256, 1))
     y = np.zeros((n_images, 256, 256, 2))
     batch = 0
+    counter = 0
     print("\n LOADING DATA {}".format(dataset))
     for image in tqdm(folders):
-        if not image.endswith(".txt"):
-            picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
-            x[batch] = picture[:, :, 0:1]
-            y[batch] = picture[:, :, 1:3]
-            batch += 1
+        while counter < 200:
+            if not image.endswith(".txt"):
+                picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
+                x[batch] = picture[:, :, 0:1]
+                y[batch] = picture[:, :, 1:3]
+                batch += 1
+                counter += 1
     data['x'] = x
     data['y'] = y
     return data
