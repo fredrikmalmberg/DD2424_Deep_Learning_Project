@@ -3,16 +3,16 @@ from keras import losses, models, layers, optimizers
 
 def buildLayers():
     model = models.Sequential()
-    model.add(layers.InputLayer(input_shape=(256, 256, 3)))
+    model.add(layers.InputLayer(input_shape=(201, 256, 256)))
     model.add(layers.Conv2D(64, kernel_size = (3,3), activation='relu'))
     model.add(layers.Conv2D(128, kernel_size = (3,3), activation='relu'))
     model.add(layers.Conv2D(512, kernel_size = (3,3), activation='relu'))
     model.add(layers.Conv2D(512, kernel_size = (3,3), activation='relu'))
     model.add(layers.Conv2D(512, kernel_size = (3,3), activation='relu'))
     model.add(layers.Conv2D(512, kernel_size = (3,3), activation='relu'))
-    model.add(layers.Conv2D(256, kernel_size = (3,3), activation='relu'))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(1, activation='softmax'))
+    #model.add(layers.Conv2D(256, kernel_size = (3,3), activation='relu'))
+    #model.add(layers.Flatten())
+    #model.add(layers.Dense(1, activation='softmax'))
     return model
 
 def computeLoss(y_true, y_pred):
