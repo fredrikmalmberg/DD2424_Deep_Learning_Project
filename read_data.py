@@ -34,7 +34,7 @@ def import_data(dataset):
     for image in tqdm(folders):
         if not image.endswith(".txt"):
             picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
-            x[batch] = picture[:, :, 0]
+            x[batch] = picture[:, :, 0:1]
             y[batch] = picture[:, :, 1:3]
             batch += 1
     data['x'] = x
