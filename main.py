@@ -5,8 +5,10 @@ import tensorflow as tf
 from Network_Layers import buildLayers, computeLoss, trainNetwork
 
 def main():
+    ''' RUN THE NEXT 2 ROWS TO GET THE DATA IN LAB SHAPE LOCALLY (NEED TO RUN ONLY ONCE)'''
     # read_data.save_lab_figures('train')
     # read_data.save_lab_figures('validation')
+    ''' IMPORTING THE LAB FILES'''
     train = read_data.import_data('train')
     validation = read_data.import_data('validation')
     # read_data.print_picture(train['x'][0])
