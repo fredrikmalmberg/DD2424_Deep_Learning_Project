@@ -6,32 +6,6 @@ from tqdm import tqdm
 
 from skimage.color import rgb2lab
 
-
-# def import_colored_data(type):
-#     data = {}
-#     folders = os.listdir('dataset/data/{}/'.format(type))
-#     n_images = 0
-#
-#     for subfolder in folders:
-#         entry = os.listdir('dataset/data/{}/{}'.format(type, subfolder))
-#         for image in entry:
-#             n_images += 1
-#
-#     x = np.zeros((n_images, 256, 256, 3))
-#     y = np.empty(n_images, dtype=object)
-#     batch = 0
-#     print("\n LOADING DATA {}".format(type))
-#     for subfolder in tqdm(folders):
-#         entry = os.listdir('dataset/data/{}/{}'.format(type, subfolder))
-#         for image in entry:
-#             picture = cv2.resize(cv2.imread('dataset/data/{}/{}/{}'.format(type, subfolder, image)), (256, 256))
-#             y[batch] = (re.sub(r'_.*', "", image))
-#             x[batch] = picture / 255
-#             batch += 1
-#     data['x'] = x
-#     data['y'] = y
-#     return data
-
 def save_lab_figures(dataset):
     folders = os.listdir('dataset/data/{}/'.format(dataset))
     for subfolder in tqdm(folders):
@@ -52,7 +26,7 @@ def import_data(dataset):
     for _ in folders:
         n_images += 1
 
-    x = np.zeros((n_images, 256, 256))
+    x = np.zeros((n_images, 256, 256, 1))
     y = np.zeros((n_images, 256, 256, 2))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))

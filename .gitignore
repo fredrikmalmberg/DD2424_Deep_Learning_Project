@@ -133,3 +133,4 @@ dmypy.json
 
 #
 /dataset/data_2/*
+/dataset/data_lab/*
