@@ -3,8 +3,8 @@ import os
 import numpy as np
 import re
 from tqdm import tqdm
-
 from skimage.color import rgb2lab
+
 
 def save_lab_figures(dataset):
     folders = os.listdir('dataset/data/{}/'.format(dataset))
@@ -23,18 +23,20 @@ def import_data(dataset):
     folders = os.listdir('dataset/data_lab/{}/'.format(dataset))
     n_images = 0
 
-    for _ in folders:
-        n_images += 1
+    for file in folders:
+        if not file.endswith(".txt"):
+            n_images += 1
 
     x = np.zeros((n_images, 256, 256, 1))
     y = np.zeros((n_images, 256, 256, 2))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))
     for image in tqdm(folders):
-        picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
-        x[batch] = picture[:, :, 0]
-        y[batch] = picture[:, :, 1:3]
-        batch += 1
+        if not image.endswith(".txt"):
+            picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
+            x[batch] = picture[:, :, 0]
+            y[batch] = picture[:, :, 1:3]
+            batch += 1
     data['x'] = x
     data['y'] = y
     return data
