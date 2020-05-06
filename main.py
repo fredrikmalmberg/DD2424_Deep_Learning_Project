@@ -13,9 +13,9 @@ def main():
     ''' IMPORTING THE LAB FILES'''
     train = read_data.import_data('train')
     validation = read_data.import_data('validation')
-    # read_data.print_picture(train['x'][0])
-    # tensor_data = tf.data.Dataset.from_tensor_slices((train['x'], train['y']))
-    model = trainNetwork(train['x'], train['y'], validation['x'], validation['y'], epochs_val=10, bsize=100)
+    # read_data.print_picture(train['input'][0])
+    # tensor_data = tf.data.Dataset.from_tensor_slices((train['input'], train['target']))
+    # model = trainNetwork(train['input'], train['target'], validation['input'], validation['target'], epochs_val=10,bsize=100)
     # print(tensor_data)
 
 
