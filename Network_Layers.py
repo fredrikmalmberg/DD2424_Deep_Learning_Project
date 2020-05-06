@@ -56,7 +56,7 @@ def buildLayers(dimensions):
     model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
                             padding='same', kernel_regularizer=l2_reg, name='conv7_3'))
     model.add(layers.BatchNormalization())
-    model.add(layers.UpSampling2D((2, 2)))    # We upsample one step before the layer, and then use a (1,1) stride
+    model.add(layers.UpSampling2D((8, 8)))    # Todo what is the correct upsampling here? (8,8) makes it work but we think it should be (2,2)
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
                             padding='same', kernel_regularizer=l2_reg, name='conv8_1'))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
@@ -65,6 +65,7 @@ def buildLayers(dimensions):
                             padding='same', kernel_regularizer=l2_reg, name='conv8_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(2, (1, 1), activation='softmax', padding='same', name='pred'))
+    # model.add(layers.Dense(2, activation='softmax', name='pred'))
     return model
 
 
@@ -75,6 +76,7 @@ def computeLoss(y_true, y_pred):
 
 def trainNetwork(train_x, train_y, validation_x, validation_y, epochs_val, bsize):
     model = buildLayers(train_x.shape)
+    print(model.summary())
     # Todo next step is to implement the probability distribution a,b to upsample the pictures so we can train with them
     SGD = optimizers.Adam(learning_rate=0.001)
     model.compile(loss='categorical_crossentropy', optimizer=SGD, metrics=[

@@ -18,7 +18,7 @@ def save_lab_figures(dataset):
             np.save('dataset/data_lab/{}/{}'.format(dataset, pic_name), picture)
 
 
-def import_data(dataset):
+def import_data(dataset, batch_size):
     data = {}
     folders = os.listdir('dataset/data_lab/{}/'.format(dataset))
     n_images = 0
@@ -29,13 +29,13 @@ def import_data(dataset):
 
     # input = np.zeros((n_images, 256, 256, 1))
     # target = np.zeros((n_images, 256, 256, 2))
-    input = np.zeros((200, 256, 256, 1))
-    target = np.zeros((200, 256, 256, 2))
+    input = np.zeros((batch_size, 256, 256, 1))
+    target = np.zeros((batch_size, 256, 256, 2))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))
     for image in tqdm(folders):
         if not image.endswith(".txt"):
-            while batch < 200:
+            while batch < batch_size:
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
                 target[batch] = picture[:, :, 1:]
