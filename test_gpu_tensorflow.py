@@ -25,6 +25,7 @@ import sys
 def main():
     try:
         import tensorflow as tf
+        print("TensorFlow version: " + tf.version.VERSION)
         print("TensorFlow successfully installed.")
         if tf.test.is_built_with_cuda():
             print("The installed version of TensorFlow includes GPU support.")
