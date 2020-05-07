@@ -14,8 +14,8 @@ def main():
     train = read_data.import_data('train', 100)
     validation = read_data.import_data('validation', 100)
     # read_data.print_picture(train['input'][0])
-    tensor_data = tf.data.Dataset.from_tensor_slices((train['input'], train['target']))
-    model = trainNetwork(train['input'], train['target'], validation['input'], validation['target'], epochs_val=2,bsize=100)
+    # tensor_data = tf.data.Dataset.from_tensor_slices((train['input'], train['target']))
+    # model = trainNetwork(train['input'], train['target'], validation['input'], validation['target'], epochs_val=2,bsize=100)
     # print(tensor_data)
 
 
