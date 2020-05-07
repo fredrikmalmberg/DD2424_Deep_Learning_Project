@@ -28,15 +28,13 @@ def import_data(dataset, batch_size):
         if not file.endswith(".txt"):
             n_images += 1
 
-    # input = np.zeros((n_images, 256, 256, 1))
-    # target = np.zeros((n_images, 256, 256, 2))
     input = np.zeros((batch_size, 256, 256, 1))
     target = np.zeros((batch_size, 256, 256, 313))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))
     for image in tqdm(folders):
         if not image.endswith(".txt"):
-            while batch < batch_size:
+            if batch < batch_size:
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
                 target[batch] = onehot_enconding_ab(picture[:, :, 1:]) # 313 layers at the end

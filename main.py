@@ -1,9 +1,9 @@
-import read_data
 import warnings
 
+import read_data
+
 warnings.filterwarnings('ignore', category=FutureWarning)
-import tensorflow as tf
-from Network_Layers import buildLayers, computeLoss, trainNetwork
+from Network_Layers import train_network
 
 
 def main():
@@ -15,8 +15,11 @@ def main():
     validation = read_data.import_data('validation', 100)
     # read_data.print_picture(train['input'][0])
     # tensor_data = tf.data.Dataset.from_tensor_slices((train['input'], train['target']))
-    # model = trainNetwork(train['input'], train['target'], validation['input'], validation['target'], epochs_val=2,bsize=100)
-    # print(tensor_data)
+
+    # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+    print("Starting training of network")
+    model = train_network(train['input'], train['target'], validation['input'], validation['target'], epochs_val=5, bsize=2)
+    print("Training done")
 
 
 if __name__ == '__main__':
