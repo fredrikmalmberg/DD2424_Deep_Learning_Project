@@ -74,7 +74,7 @@ def build_model(dimensions):
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
                             padding='same', kernel_regularizer=l2_reg, name='conv8_3'))
     model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(2, (1, 1), activation='softmax', padding='same', name='pred'))
+    model.add(layers.Conv2D(313, (1, 1), activation='softmax', padding='same', name='pred'))
     return model
 
 

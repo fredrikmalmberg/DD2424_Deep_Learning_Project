@@ -11,8 +11,9 @@ def main():
     # read_data.save_lab_figures('train')
     # read_data.save_lab_figures('validation')
     ''' IMPORTING THE LAB FILES'''
-    train = read_data.import_data('train', 100)
-    validation = read_data.import_data('validation', 100)
+    nr_images = 200
+    train = read_data.import_data('train', nr_images)
+    validation = read_data.import_data('validation', nr_images)
     # read_data.print_picture(train['input'][0])
     # tensor_data = tf.data.Dataset.from_tensor_slices((train['input'], train['target']))
 

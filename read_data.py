@@ -29,16 +29,22 @@ def import_data(dataset, batch_size):
             n_images += 1
 
     input = np.zeros((batch_size, 256, 256, 1))
-    target = np.zeros((batch_size, 256, 256, 313))
+    target = np.zeros((batch_size, 64, 64, 313))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))
+    if os.path.exists('dataset/data/color_space.npy'):
+        print("Loaded one hot encoding color space")
+        uniques = np.load('dataset/data/color_space.npy')
+    else:
+        uniques = None
     for image in tqdm(folders):
         if not image.endswith(".txt"):
             if batch < batch_size:
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
-                target[batch] = onehot_enconding_ab(picture[:, :, 1:]) # 313 layers at the end
-                # target[batch] = picture[:, :, 1:] ## 2 layers at the end
+                tmp = cv2.resize(picture[:, :, 1:], (64, 64))
+                tmp2 = onehot_enconding_ab(tmp, uniques)
+                target[batch] = onehot_enconding_ab(tmp, uniques)
                 batch += 1
     data['input'] = input
     data['target'] = target
@@ -46,13 +52,11 @@ def import_data(dataset, batch_size):
     return data
 
 
-def onehot_enconding_ab(target):
+def onehot_enconding_ab(target, uniques):
     a = np.ravel(target[:, :, 0])
     b = np.ravel(target[:, :, 1])
-    if os.path.exists('dataset/data/color_space.npy'):
-        uniques = np.load('dataset/data/color_space.npy')
-        #print('\n Loaded unique values')
-    else:
+    if uniques is None:
+        print("No hot encoding space file found, creating a new one based on the input data...")
         bins = np.arange(-110, 110, 10)
         bin_a = np.copy(a)
         bin_b = np.copy(b)
