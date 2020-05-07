@@ -27,10 +27,8 @@ def import_data(dataset, batch_size):
         if not file.endswith(".txt"):
             n_images += 1
 
-    # input = np.zeros((n_images, 256, 256, 1))
-    # target = np.zeros((n_images, 256, 256, 2))
     input = np.zeros((batch_size, 256, 256, 1))
-    target = np.zeros((batch_size, 256, 256, 2))
+    target = np.zeros((batch_size, 64, 64, 2))
     batch = 0
     print("\n LOADING DATA {}".format(dataset))
     for image in tqdm(folders):
@@ -38,7 +36,7 @@ def import_data(dataset, batch_size):
             while batch < batch_size:
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
-                target[batch] = picture[:, :, 1:]
+                target[batch] = cv2.resize(picture[:, :, 1:], (64, 64))
                 batch += 1
     data['input'] = input
     data['target'] = target

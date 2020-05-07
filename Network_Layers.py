@@ -66,8 +66,7 @@ def build_model(dimensions):
     model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
                             padding='same', kernel_regularizer=l2_reg, name='conv7_3'))
     model.add(layers.BatchNormalization())
-    model.add(layers.UpSampling2D(
-        (8, 8)))  # Todo what is the correct upsampling here? (8,8) makes it work but we think it should be (2,2)
+    model.add(layers.UpSampling2D((2, 2)))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
                             padding='same', kernel_regularizer=l2_reg, name='conv8_1'))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer="he_normal", strides=(1, 1),
