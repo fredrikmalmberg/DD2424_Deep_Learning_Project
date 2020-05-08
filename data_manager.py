@@ -8,6 +8,11 @@ from sklearn.neighbors import NearestNeighbors
 
 
 def save_lab_figures(dataset):
+    """
+    Converts rgb files into lab format
+    :param dataset: Folder where desired data will be converted
+    :return: void
+    """
     folders = os.listdir('dataset/data/{}/'.format(dataset))
     for subfolder in tqdm(folders):
         entry = os.listdir('dataset/data/{}/{}'.format(dataset, subfolder))
@@ -20,6 +25,13 @@ def save_lab_figures(dataset):
 
 
 def import_data(dataset, batch_size):
+    """
+    Loads images in lab format
+    :param dataset: name of the dataset folder
+    :param batch_size: How many data points to load
+    :return: batch_size data tuple with input and target
+    """
+
     data = {}
     folders = os.listdir('dataset/data_lab/{}/'.format(dataset))
     n_images = 0
@@ -43,7 +55,6 @@ def import_data(dataset, batch_size):
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
                 tmp = cv2.resize(picture[:, :, 1:], (64, 64))
-                tmp2 = onehot_enconding_ab(tmp, uniques)
                 target[batch] = onehot_enconding_ab(tmp, uniques)
                 batch += 1
     data['input'] = input
@@ -65,11 +76,9 @@ def onehot_enconding_ab(target, uniques):
             bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
         uniques = np.unique(
             np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
-        # np.save('dataset/data/color_space.npy', uniques)
-        print('\n Created unique values')
-    #print('staking')
+        np.save('dataset/data/color_space.npy', uniques)
+        print('\nCreated  new unique values file from the loaded targets')
     ab = np.vstack((a, b)).T
-    #print('getting neighbors')
     nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(uniques)
     distances, indices = nbrs.kneighbors(ab)
 
@@ -77,11 +86,18 @@ def onehot_enconding_ab(target, uniques):
     index = np.arange(ab.shape[0]).reshape(-1, 1)
     z = gaussian_kernel(distances, sigma=5)
     y[index, indices] = z
-    y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])  # should be n_images X 256 X 256 X 313
+    y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
     return y
 
 
 def gaussian_kernel(distance, sigma):
+    """
+    Gaussian kernel
+    :param distance: Distance between data
+    :param sigma: Desired sigma
+    :return: Kernel matrix
+    """
+
     num = np.exp(-np.power(distance, 2) / (2 * np.power(sigma, 2)))
     denom = np.sum(num, axis=1).reshape(-1, 1)
     return num / denom
