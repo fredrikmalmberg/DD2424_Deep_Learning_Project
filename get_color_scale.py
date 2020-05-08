@@ -5,7 +5,7 @@ import os
 from skimage.color import rgb2lab
 
 
-def generate_unique():
+def generate_unique_color_space():
     bins = np.arange(-110, 110, 10)
     target = np.zeros((100, 256, 256, 2))
     nr_image = 0
@@ -33,11 +33,11 @@ def generate_unique():
         bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
     uniques = np.unique(
         np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
-    np.save('dataset/data/color_space_test.npy', uniques)
+    np.save('dataset/data/color_space.npy', uniques)
 
 
 def main():
-    generate_unique()
+    generate_unique_color_space()
 
 
 if __name__ == '__main__':

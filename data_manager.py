@@ -1,11 +1,71 @@
-import cv2
 import os
-import numpy as np
 import re
-from tqdm import tqdm
+
+import cv2
+import numpy as np
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
+from tqdm import tqdm
+import os
+from get_color_scale import generate_unique_color_space
 
+
+def assert_data_is_setup():
+    # Checks that we have training, validation and test folders. We assume if the folders exists that there is files
+    # in them. Checking if files exists in a directory if the data set is big takes unnecessary time.
+    if not os.path.isdir("dataset/data/train"):
+        raise FileNotFoundError("No training data set found, please check that you the files and then run again")
+    if not os.path.isdir("dataset/data/validation"):
+        raise FileNotFoundError("No validation data set found, please check that you the files and then run again")
+    if not os.path.isdir("dataset/data/test"):
+        raise FileNotFoundError("No test data set found, please check that you the files and then run again")
+
+    # Check that color space file is setup
+    if not os.path.isfile("dataset/data/color_space.npy"):
+        print("color_space.npy is missing, will generate a new one from the training data")
+        generate_unique_color_space()
+        print("New color_space.npy was generated successfully")
+
+    print("The data is setup correctly")
+
+def onehot_enconding_ab(target, uniques):
+    a = np.ravel(target[:, :, 0])
+    b = np.ravel(target[:, :, 1])
+    if uniques is None:
+        print("No hot encoding space file found, creating a new one based on the input data...")
+        bins = np.arange(-110, 110, 10)
+        bin_a = np.copy(a)
+        bin_b = np.copy(b)
+        for i in range(len(bins) - 1):
+            bin_a = np.where((a < bins[i + 1]) & (a >= bins[i]), bins[i], bin_a)
+            bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
+        uniques = np.unique(
+            np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
+        np.save('dataset/data/color_space.npy', uniques)
+        print('\nCreated  new unique values file from the loaded targets')
+    ab = np.vstack((a, b)).T
+    nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(uniques)
+    distances, indices = nbrs.kneighbors(ab)
+
+    y = np.zeros((ab.shape[0], uniques.shape[0]))
+    index = np.arange(ab.shape[0]).reshape(-1, 1)
+    z = gaussian_kernel(distances, sigma=5)
+    y[index, indices] = z
+    y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
+    return y
+
+
+def gaussian_kernel(distance, sigma):
+    """
+    Gaussian kernel
+    :param distance: Distance between data
+    :param sigma: Desired sigma
+    :return: Kernel matrix
+    """
+
+    num = np.exp(-np.power(distance, 2) / (2 * np.power(sigma, 2)))
+    denom = np.sum(num, axis=1).reshape(-1, 1)
+    return num / denom
 
 def save_lab_figures(dataset):
     """
@@ -61,46 +121,6 @@ def import_data(dataset, batch_size):
     data['target'] = target
 
     return data
-
-
-def onehot_enconding_ab(target, uniques):
-    a = np.ravel(target[:, :, 0])
-    b = np.ravel(target[:, :, 1])
-    if uniques is None:
-        print("No hot encoding space file found, creating a new one based on the input data...")
-        bins = np.arange(-110, 110, 10)
-        bin_a = np.copy(a)
-        bin_b = np.copy(b)
-        for i in range(len(bins) - 1):
-            bin_a = np.where((a < bins[i + 1]) & (a >= bins[i]), bins[i], bin_a)
-            bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
-        uniques = np.unique(
-            np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
-        np.save('dataset/data/color_space.npy', uniques)
-        print('\nCreated  new unique values file from the loaded targets')
-    ab = np.vstack((a, b)).T
-    nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(uniques)
-    distances, indices = nbrs.kneighbors(ab)
-
-    y = np.zeros((ab.shape[0], uniques.shape[0]))
-    index = np.arange(ab.shape[0]).reshape(-1, 1)
-    z = gaussian_kernel(distances, sigma=5)
-    y[index, indices] = z
-    y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
-    return y
-
-
-def gaussian_kernel(distance, sigma):
-    """
-    Gaussian kernel
-    :param distance: Distance between data
-    :param sigma: Desired sigma
-    :return: Kernel matrix
-    """
-
-    num = np.exp(-np.power(distance, 2) / (2 * np.power(sigma, 2)))
-    denom = np.sum(num, axis=1).reshape(-1, 1)
-    return num / denom
 
 
 def print_picture(picture):

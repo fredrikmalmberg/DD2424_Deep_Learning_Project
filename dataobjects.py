@@ -20,3 +20,6 @@ class settings:
         self.batch_size = 2                              # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
         self.learning_rate = 0.001                       # Learning rate of the training
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
+
+        # Test settings
+        self.test_step_size = 50    # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
