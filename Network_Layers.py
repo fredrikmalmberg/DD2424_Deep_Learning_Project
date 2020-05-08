@@ -80,8 +80,8 @@ def create_model(settings):
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                             padding='same', kernel_regularizer=regulizer, name='conv8_3'))
     model.add(layers.BatchNormalization())
-    model.add(
-        layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred'))
+    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred', input_shape=(64,64,313)))
+    print(model.summary())
 
     # Sets final parameters and compiles network
     sgd = optimizers.Adam(learning_rate=settings.learning_rate)

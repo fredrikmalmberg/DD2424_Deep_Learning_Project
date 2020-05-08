@@ -1,12 +1,14 @@
 import os
 import re
+from datetime import datetime
 
 import cv2
 import numpy as np
+from keras.models import model_from_json
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
-import os
+from keras.models import load_model as model_loader
 from get_color_scale import generate_unique_color_space
 
 
@@ -27,6 +29,7 @@ def assert_data_is_setup():
         print("New color_space.npy was generated successfully")
 
     print("The data is setup correctly")
+
 
 def onehot_enconding_ab(target, uniques):
     a = np.ravel(target[:, :, 0])
@@ -66,6 +69,36 @@ def gaussian_kernel(distance, sigma):
     num = np.exp(-np.power(distance, 2) / (2 * np.power(sigma, 2)))
     denom = np.sum(num, axis=1).reshape(-1, 1)
     return num / denom
+
+
+def save_model(model, name=None):
+    # Sets the name of the model
+    if name is None:
+        now = datetime.now()
+        name = now.strftime("%H_%M_%S")
+
+    model.save("trained_models/" + name + ".h5")
+    # # serialize model to JSON
+    # model_json = model.to_json()
+    # with open("trained_models/" + name + ".json", "w") as json_file:
+    #     json_file.write(model_json)
+    # # serialize weights to HDF5
+    # model.save_weights("trained_models/" + name + ".h5")
+    print("Saved model to disk")
+
+
+def load_model(name):
+    # load json and create model
+    # json_file = open("trained_models/" + name + '.json', 'r')
+    # loaded_model_json = json_file.read()
+    # json_file.close()
+    # loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    # loaded_model.load_weights("trained_models/" + name + ".h5")
+    model = model_loader("trained_models/" + name + ".h5")
+    print("Loaded model from disk")
+    return model
+
 
 def save_lab_figures(dataset):
     """
