@@ -7,7 +7,7 @@ from skimage.color import rgb2lab
 
 def generate_unique():
     bins = np.arange(-110, 110, 10)
-    target = np.zeros((100, 256, 256, 2))
+    target = np.zeros((10, 256, 256, 2))
     nr_image = 0
     folders = os.listdir('dataset/data/{}/'.format('train'))
     for subfolder in tqdm(folders):
@@ -32,7 +32,7 @@ def generate_unique():
         bin_a = np.where((a < bins[i + 1]) & (a >= bins[i]), bins[i], bin_a)
         bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
     uniques = np.unique(
-        np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
+        (np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b))))), axis=0)
     np.save('dataset/data/color_space_test.npy', uniques)
 
 
