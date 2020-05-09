@@ -7,7 +7,7 @@ from skimage.color import rgb2lab
 
 def generate_unique_color_space():
     bins = np.arange(-110, 110, 10)
-    target = np.zeros((100, 256, 256, 2))
+    target = np.zeros((10, 256, 256, 2))
     nr_image = 0
     folders = os.listdir('dataset/data/{}/'.format('train'))
     for subfolder in tqdm(folders):
