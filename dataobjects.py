@@ -14,15 +14,15 @@ class settings:
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
-        self.nr_epochs = 1
-        self.training_steps_per_epoch = 10
-        self.validation_steps_per_epoch = 10
-        self.batch_size = 2  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
-        self.learning_rate = 0.001  # Learning rate of the training
+        self.nr_epochs = 20
+        self.training_steps_per_epoch = 20
+        self.validation_steps_per_epoch = 2
+        self.batch_size = 10  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+        self.learning_rate = 3e-5  # Learning rate of the training
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
 
         # Test settings
-        self.test_step_size = 50  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
+        self.test_step_size = 20  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
 
     def print_training_settings(self):
         print("Settings for the training:\nNumber of epochs: {nr_epochs}, Batch size: {batch_size}, "

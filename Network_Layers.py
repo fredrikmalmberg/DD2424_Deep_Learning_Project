@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
@@ -9,8 +10,9 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
         tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     except RuntimeError as e:
         print(e)
 
@@ -23,7 +25,8 @@ def create_model(settings):
     :param settings: Settings for the network
     :return: A compiled model ready to be trained
     """
-    regulizer = settings.regularizer
+    #regulizer = settings.regularizer
+    regulizer = None
     initializer = settings.kernel_initializer
     model = models.Sequential()
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
@@ -83,9 +86,8 @@ def create_model(settings):
     model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred',
                             input_shape=(64, 64, 313)))
     print(model.summary())
-
     # Sets final parameters and compiles network
-    sgd = optimizers.Adam(learning_rate=settings.learning_rate)
+    sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay = 1e-3, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
     model.compile(loss=settings.loss_function, optimizer=sgd, metrics=["accuracy"])
     return model
 
@@ -146,9 +148,10 @@ def pre_process(images, settings, unique_colors):
     return inputs, targets
 
 
-def train_network(settings):
+def train_network(settings, class_weight = None):
     """
     Trains the network with settings given by the settings object and found classes in unique_colors
+    :param class_weight: The rebalancing of the classes
     :param settings: Settings object with chosen parameters
     :return: A trained model
     """
@@ -159,7 +162,7 @@ def train_network(settings):
     print("Starting to train the network")
     settings.print_training_settings()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
-              validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch)
+              validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch, class_weight=class_weight)
     print("Training done")
     return model
 
