@@ -5,6 +5,9 @@ import tensorflow_addons as tfa
 from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
+from keras.callbacks import ModelCheckpoint
+import glob
+import os
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -88,7 +91,13 @@ def create_model(settings):
     print(model.summary())
     # Sets final parameters and compiles network
     sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay = 1e-3, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
+
+    if settings.from_checkpoint:
+        model.load_weights(load_checkpoint(model))
+        print('successfully loaded checkpoint')
+
     model.compile(loss=settings.loss_function, optimizer=sgd, metrics=["accuracy"])
+
     return model
 
 
@@ -147,6 +156,18 @@ def pre_process(images, settings, unique_colors):
 
     return inputs, targets
 
+def load_checkpoint(model):
+    """
+    Load the best checkpoint from the most recent training
+    :param: model
+    :return: weight file from checkpoint
+    """
+    path = 'checkpoints/'
+    files = os.listdir(path)
+    paths = [os.path.join(path, basename) for basename in files]
+    checkpoint = max(paths, key=os.path.getctime)
+
+    return checkpoint
 
 def train_network(settings, class_weight = None):
     """
@@ -161,8 +182,10 @@ def train_network(settings, class_weight = None):
     validate_generator = create_generator(settings, "validation")
     print("Starting to train the network")
     settings.print_training_settings()
+    checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+    callbacks_list = [checkpoint]
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
-              validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch, class_weight=class_weight)
+              validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch, class_weight=class_weight, callbacks=callbacks_list)
     print("Training done")
     return model
 

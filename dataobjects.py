@@ -10,7 +10,7 @@ class settings:
         self.input_shape = (256, 256, 1)  # Dimensions of the input layer
         self.nr_colors_space = nr_colors_space  # Each color each picture can assume, set by the seen data set
         self.output_shape = (64, 64, nr_colors_space)  # Shape of the output
-        self.regularizer = regularizers.l2()  # What regulizer to use in the layers, # Todo find the value of the regularization in the paper, default here is 0.01
+        self.regularizer = regularizers.l2(l=0.001)  # What regulizer to use in the layers, # Todo find the value of the regularization in the paper, default here is 0.01
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
@@ -22,6 +22,7 @@ class settings:
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
 
         # Test settings
+        self.from_checkpoint = False #true if loading from previous checkpoint
         self.test_step_size = 20  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
 
     def print_training_settings(self):
