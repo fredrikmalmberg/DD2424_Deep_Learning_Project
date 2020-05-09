@@ -25,10 +25,9 @@ def create_model(settings):
     regulizer = settings.regularizer
     initializer = settings.kernel_initializer
     model = models.Sequential()
-    model.add(layers.InputLayer(input_shape=settings.input_shape))
-
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv1_1'))
+                            padding='same', kernel_regularizer=regulizer, name='conv1_1',
+                            input_shape=settings.input_shape))
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
                             padding='same', kernel_regularizer=regulizer, name='conv1_2'))
     model.add(layers.BatchNormalization())
@@ -80,7 +79,8 @@ def create_model(settings):
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                             padding='same', kernel_regularizer=regulizer, name='conv8_3'))
     model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred', input_shape=(64,64,313)))
+    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred',
+                            input_shape=(64, 64, 313)))
     print(model.summary())
 
     # Sets final parameters and compiles network
@@ -156,6 +156,7 @@ def train_network(settings):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     print("Starting to train the network")
+    settings.print_training_settings()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch)
     print("Training done")

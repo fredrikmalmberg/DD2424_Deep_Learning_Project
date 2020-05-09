@@ -4,7 +4,6 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-from keras.models import model_from_json
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
@@ -72,31 +71,30 @@ def gaussian_kernel(distance, sigma):
 
 
 def save_model(model, name=None):
+    """
+    Saves the model to disk. If no name provided it will use the time the model was saved
+    :param model: The model to save/store
+    :param name: A name to identify the model
+    :return: The saved models name
+    """
+
     # Sets the name of the model
     if name is None:
         now = datetime.now()
-        name = now.strftime("%H_%M_%S")
-
+        name = now.strftime("%Y_%m_%d_%H_%M")
     model.save("trained_models/" + name + ".h5")
-    # # serialize model to JSON
-    # model_json = model.to_json()
-    # with open("trained_models/" + name + ".json", "w") as json_file:
-    #     json_file.write(model_json)
-    # # serialize weights to HDF5
-    # model.save_weights("trained_models/" + name + ".h5")
-    print("Saved model to disk")
+    print("Saved model: {model_name} to disk successfully".format(model_name=name))
+    return name
 
 
 def load_model(name):
-    # load json and create model
-    # json_file = open("trained_models/" + name + '.json', 'r')
-    # loaded_model_json = json_file.read()
-    # json_file.close()
-    # loaded_model = model_from_json(loaded_model_json)
-    # load weights into new model
-    # loaded_model.load_weights("trained_models/" + name + ".h5")
+    """
+    Loads a model from disk with the given param name.
+    :param name: Name of the model to load
+    :return: A model
+    """
     model = model_loader("trained_models/" + name + ".h5")
-    print("Loaded model from disk")
+    print("Loaded model: {model_name} from disk successfully".format(model_name=name))
     return model
 
 
