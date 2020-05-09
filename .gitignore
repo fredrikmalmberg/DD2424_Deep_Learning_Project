@@ -130,9 +130,6 @@ dmypy.json
 
 # InteliJ stuff
 *.idea
+*.h5
 
-*.npy
-
-#
-/dataset/data_2/*
-
+/dataset/data_lab/
