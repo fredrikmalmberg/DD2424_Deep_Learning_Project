@@ -1,4 +1,4 @@
-def plot_test(model, img_lab, img_AB):
+def plot_output(model, img_lab, img_AB):
     from skimage.color import lab2rgb, rgb2lab
     import numpy as np
     import matplotlib.pyplot as plt
@@ -6,7 +6,7 @@ def plot_test(model, img_lab, img_AB):
     import cv2
     from scipy import ndimage
     cs = np.load('dataset/data/color_space.npy')
-    out = loaded_model.predict(
+    out = model.predict(
         np.array(([img_lab])), batch_size=20, verbose=1, steps=None, callbacks=None, max_queue_size=10,
         workers=1, use_multiprocessing=False
     )
