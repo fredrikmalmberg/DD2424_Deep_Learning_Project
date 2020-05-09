@@ -10,6 +10,7 @@ if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
         tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
+        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
     except RuntimeError as e:
         print(e)
 
