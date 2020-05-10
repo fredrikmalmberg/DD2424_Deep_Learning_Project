@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 import os
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -184,7 +184,9 @@ def train_network(settings, class_weight = None):
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-    callbacks_list = [checkpoint]
+    reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
+                                              patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
+    callbacks_list = [checkpoint, reduced_learning_rate]
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,

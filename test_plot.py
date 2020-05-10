@@ -1,8 +1,15 @@
+import data_manager as data_manager
+
+def colorize_benchmark_images(model):
+    data = data_manager.get_benchmark_images()
+    for i in range(data['input'].shape[0]):
+        plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
+
+
 def plot_output(model, img_lab, img_AB):
     from skimage.color import lab2rgb, rgb2lab
     import numpy as np
     import matplotlib.pyplot as plt
-    import matplotlib.image as mpimg
     import cv2
     from scipy import ndimage
     cs = np.load('dataset/data/color_space.npy')

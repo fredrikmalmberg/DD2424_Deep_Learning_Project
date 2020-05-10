@@ -128,7 +128,7 @@ def import_data(dataset, batch_size):
     n_images = 0
 
     for file in folders:
-        if not file.endswith(".txt"):
+        if not file.endswith(".txt") and not file.endswith('.JPEG'):
             n_images += 1
 
     input = np.zeros((batch_size, 256, 256, 1))
@@ -141,7 +141,7 @@ def import_data(dataset, batch_size):
     else:
         uniques = None
     for image in tqdm(folders):
-        if not image.endswith(".txt"):
+        if not image.endswith(".txt") and not image.endswith('.JPEG'):
             if batch < batch_size:
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
@@ -153,6 +153,8 @@ def import_data(dataset, batch_size):
 
     return data
 
+def get_benchmark_images():
+    return import_data("benchmark_images", 3)
 
 def print_picture(picture):
     cv2.imshow('image', picture)
