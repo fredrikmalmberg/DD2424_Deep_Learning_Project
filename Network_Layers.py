@@ -6,18 +6,17 @@ from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint
-import glob
 import os
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
-        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
+        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+        # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     except RuntimeError as e:
         print(e)
 

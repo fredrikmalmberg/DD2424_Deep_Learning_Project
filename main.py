@@ -3,14 +3,13 @@ import warnings
 import dataobjects
 from Network_Layers import train_network, evaluate_model
 import data_manager
-import read_data
 from test_plot import plot_output
 
 warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 def main():
-    train = read_data.import_data('train', 10)  # this is just for plotting
+    train = data_manager.import_data('train', 10)  # this is just for plotting
     settings = dataobjects.settings(313)
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
     model = train_network(settings)
