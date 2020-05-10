@@ -10,7 +10,7 @@ if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
         tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
     except RuntimeError as e:
         print(e)
 
@@ -103,7 +103,7 @@ def create_generator(settings, data_set):
 
     unique_colors = np.load('dataset/data/color_space.npy')  # The list of unique color combinations
     target_size = (settings.input_shape[0], settings.input_shape[1])  # Target the size the images will be resize to
-    generator = ImageDataGenerator().flow_from_directory(directory="dataset/data/" + data_set, target_size=target_size,
+    generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set, target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None)
     return generator_wrapper(generator, settings, unique_colors)
 

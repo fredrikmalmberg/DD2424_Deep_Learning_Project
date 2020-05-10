@@ -7,6 +7,7 @@ class settings:
     """
 
     def __init__(self, nr_colors_space):
+        # Network settings
         self.input_shape = (256, 256, 1)  # Dimensions of the input layer
         self.nr_colors_space = nr_colors_space  # Each color each picture can assume, set by the seen data set
         self.output_shape = (64, 64, nr_colors_space)  # Shape of the output
@@ -23,6 +24,8 @@ class settings:
 
         # Test settings
         self.test_step_size = 50  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
+
+        self.data_directory = "dataset/data/"
 
     def print_training_settings(self):
         print("Settings for the training:\nNumber of epochs: {nr_epochs}, Batch size: {batch_size}, "

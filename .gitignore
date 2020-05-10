@@ -133,3 +133,4 @@ dmypy.json
 *.h5
 
 /dataset/data_lab/
+/dataset/all_data/

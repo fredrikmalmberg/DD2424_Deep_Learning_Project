@@ -14,15 +14,15 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 def main():
     train = read_data.import_data('train', 10) # this is just for plotting
-    data_manager.assert_data_is_setup()  # Asserts that all necessary data files exists
     settings = dataobjects.settings(313)
-    # model = train_network(settings)
-    # evaluate_model(model, settings)
+    data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
+    model = train_network(settings)
+    evaluate_model(model, settings)
 
-    # model_name = data_manager.save_model(model)
-    loaded_model = data_manager.load_model("model_15_epochs_on_complete_data_set")
-    evaluate_model(loaded_model, settings)
-    plot_output(loaded_model, train['input'][0, :, :, :], train['target'][0, :, :, :])
+    model_name = data_manager.save_model(model)
+    # loaded_model = data_manager.load_model("model_15_epochs_on_complete_data_set")
+    # evaluate_model(loaded_model, settings)
+    # plot_output(loaded_model, train['input'][0, :, :, :], train['target'][0, :, :, :])
 
 if __name__ == '__main__':
     main()

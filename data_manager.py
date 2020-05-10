@@ -11,14 +11,14 @@ from keras.models import load_model as model_loader
 from get_color_scale import generate_unique_color_space
 
 
-def assert_data_is_setup():
+def assert_data_is_setup(settings):
     # Checks that we have training, validation and test folders. We assume if the folders exists that there is files
     # in them. Checking if files exists in a directory if the data set is big takes unnecessary time.
-    if not os.path.isdir("dataset/data/train"):
+    if not os.path.isdir(settings.data_directory + "/train"):
         raise FileNotFoundError("No training data set found, please check that you the files and then run again")
-    if not os.path.isdir("dataset/data/validation"):
+    if not os.path.isdir(settings.data_directory + "/validation"):
         raise FileNotFoundError("No validation data set found, please check that you the files and then run again")
-    if not os.path.isdir("dataset/data/test"):
+    if not os.path.isdir(settings.data_directory + "/test"):
         raise FileNotFoundError("No test data set found, please check that you the files and then run again")
 
     # Check that color space file is setup
