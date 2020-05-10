@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -180,13 +182,15 @@ def train_network(settings, class_weight = None):
     model = create_model(settings)
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
-    print("Starting to train the network")
     settings.print_training_settings()
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
+    print("Starting to train the network")
+    start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch, class_weight=class_weight, callbacks=callbacks_list)
-    print("Training done")
+    execution_time = datetime.now() - start_time
+    print("Training done. Execution time for the training was: ", execution_time)
     return model
 
 

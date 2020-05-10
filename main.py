@@ -9,13 +9,13 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 def main():
-    train = data_manager.import_data('train', 10)  # this is just for plotting
+    # train = data_manager.import_data('train', 10)  # this is just for plotting
     settings = dataobjects.settings(313)
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
     model = train_network(settings)
+    model_name = data_manager.save_model(model)
     evaluate_model(model, settings)
 
-    model_name = data_manager.save_model(model)
     # loaded_model = data_manager.load_model("model_15_epochs_on_complete_data_set")
     # evaluate_model(loaded_model, settings)
     # plot_output(loaded_model, train['input'][0, :, :, :], train['target'][0, :, :, :])
