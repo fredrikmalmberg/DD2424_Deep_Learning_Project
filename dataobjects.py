@@ -24,6 +24,7 @@ class settings:
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to
         self.learning_rate_reduction = 0.1  # How much the learning rate will be reduced, new_lr = lr * factor
         self.patience = 3    # How many epochs it will wait for an improvement before triggering change
+        self.use_reweighting = True
 
         # Test settings
         self.from_checkpoint = False #true if loading from previous checkpoint
