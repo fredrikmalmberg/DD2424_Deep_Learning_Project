@@ -58,7 +58,7 @@ class epoch_plot(keras.callbacks.Callback):
         picture = lab2rgb(img_combined.astype(np.float64))
         rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
 
-        f = plt.figure(figsize=(5, 10))
+        f = plt.figure(figsize=(10, 20))
         ax1 = f.add_subplot(121)
         imgplot = plt.imshow((rotated_img * 255).astype(np.uint8))
         plt.title("Combined prediction")
@@ -72,6 +72,7 @@ class epoch_plot(keras.callbacks.Callback):
         imgplot = plt.imshow((rotated_img * 255).astype(np.uint8), interpolation='none')
         plt.title("Only color")
         plt.show()
+        del predictModel
         return self
 
 
