@@ -12,6 +12,7 @@ from pre_process_crop import load_and_crop_img
 from keras.applications.inception_v3 import preprocess_input
 import keras_preprocessing.image
 import os
+from test_plot import epoch_plot
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -267,9 +268,10 @@ def train_network(settings, class_weight=None):
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01443537/n01443537_1088.JPEG')
     reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                               patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
-    callbacks_list = [checkpoint]#, reduced_learning_rate]
+    callbacks_list = [checkpoint, print_stuff]#, reduced_learning_rate]
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
