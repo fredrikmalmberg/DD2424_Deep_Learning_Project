@@ -79,4 +79,5 @@ def plot_output(model, img_lab, img_AB):
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Predicted Gamut")
 
-    plt.show()
+    plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
+    # plt.show()

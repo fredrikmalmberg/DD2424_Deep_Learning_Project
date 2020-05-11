@@ -16,15 +16,16 @@ class settings:
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
-        self.nr_epochs = 20
-        self.training_steps_per_epoch = 20
+        self.nr_epochs = 2
+        self.training_steps_per_epoch = 2
         self.validation_steps_per_epoch = 2
-        self.batch_size = 10  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+        self.batch_size = 5  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
         self.learning_rate = 3e-5  # Learning rate of the training
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to
         self.learning_rate_reduction = 0.1  # How much the learning rate will be reduced, new_lr = lr * factor
         self.patience = 3    # How many epochs it will wait for an improvement before triggering change
+        self.use_reweighting = False
 
         # Test settings
         self.from_checkpoint = False #true if loading from previous checkpoint

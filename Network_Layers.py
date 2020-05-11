@@ -17,8 +17,9 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        for idx, g in enumerate(gpus):
+            tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[idx], True)
+        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
@@ -34,7 +35,7 @@ def create_model(settings, class_weights, training = True):
     :param settings: Settings for the network
     :return: A compiled model ready to be trained
     """
-    #regulizer = settings.regularizer
+    # regulizer = settings.regularizer
     regulizer = None
     initializer = settings.kernel_initializer
     model = models.Sequential()
@@ -105,7 +106,8 @@ def create_model(settings, class_weights, training = True):
 
     #print(model.summary())
     # Sets final parameters and compiles network
-    sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay = 1e-3, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
+    sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay=1e-3, beta_1=0.9, beta_2=0.99,
+                               epsilon=1e-07)
 
     if settings.from_checkpoint:
         model.load_weights(load_checkpoint(model))
@@ -136,7 +138,8 @@ def create_generator(settings, data_set):
 
     unique_colors = np.load('dataset/data/color_space.npy')  # The list of unique color combinations
     target_size = (settings.input_shape[0], settings.input_shape[1])  # Target the size the images will be resize to
-    generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set, target_size=target_size,
+    generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
+                                                         target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None)
     return generator_wrapper(generator, settings, unique_colors)
 
@@ -172,7 +175,21 @@ def pre_process(images, settings, unique_colors):
         target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]))
         targets[batch] = onehot_enconding_ab(target_batch, unique_colors)
 
+        test = np.argmax(targets[0], axis=2)
+
+        # TODO: RE WEIGHT HERE
+
+        if settings.use_reweighting:
+            lamda = 0.5
+            q = targets[batch].shape[2]
+            reweighted = (1 - lamda) * targets[batch] + lamda / q
+
+            targets[batch] = np.power(reweighted, -1)
+
+        input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
+        inputs[batch] = input_batch.reshape((256,256,1))
         # input_batch = cv2.resize(images_lab[:, :, :], (settings.input_shape[0], settings.input_shape[1]))
+
         # we should center the L channel...
         inputs[batch] = images_lab[:, :, :1]
 
@@ -222,6 +239,7 @@ def pre_process(images, settings, unique_colors):
 
     return inputs, targets
 
+
 def load_checkpoint(model):
     """
     Load the best checkpoint from the most recent training
@@ -235,7 +253,8 @@ def load_checkpoint(model):
 
     return checkpoint
 
-def train_network(settings, class_weight = None):
+
+def train_network(settings, class_weight=None):
     """
     Trains the network with settings given by the settings object and found classes in unique_colors
     :param class_weight: The rebalancing of the classes
@@ -253,9 +272,6 @@ def train_network(settings, class_weight = None):
     callbacks_list = [checkpoint]#, reduced_learning_rate]
     print("Starting to train the network")
     start_time = datetime.now()
-    #model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
-              #validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch,
-              #class_weight=class_weight, callbacks=callbacks_list)
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch,
               callbacks=callbacks_list)
