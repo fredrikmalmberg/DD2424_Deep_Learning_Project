@@ -1,8 +1,15 @@
 import data_manager as data_manager
+import frechet_inception_difference as fid
 
-def colorize_benchmark_images(model):
+def colorize_benchmark_images(model,show_fid = True):
     data = data_manager.get_benchmark_images()
+    if show_fid:
+        originals = fid.return_benchmark_originals()
     for i in range(data['input'].shape[0]):
+        if show_fid:     
+            colorized = fid.return_colorized(model, data['input'][i][:, :, :])
+            fid_val = fid.return_fid(colorized, originals[i])
+            print("The Frechet Inception Difference is:",fid_val)
         plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
 
 
@@ -72,5 +79,5 @@ def plot_output(model, img_lab, img_AB):
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Predicted Gamut")
 
-    # plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
-    plt.show()
+    plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
+    # plt.show()

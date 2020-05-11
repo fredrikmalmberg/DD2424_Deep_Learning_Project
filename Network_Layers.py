@@ -8,6 +8,9 @@ from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from pre_process_crop import load_and_crop_img
+from keras.applications.inception_v3 import preprocess_input
+import keras_preprocessing.image
 import os
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -25,7 +28,7 @@ if gpus:
 from data_manager import onehot_enconding_ab
 
 
-def create_model(settings):
+def create_model(settings, training = True):
     """
     Creates a model and compiles it with parameters from the settings file
     :param settings: Settings for the network
@@ -37,7 +40,7 @@ def create_model(settings):
     model = models.Sequential()
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                             padding='same', kernel_regularizer=regulizer, name='conv1_1',
-                            input_shape=settings.input_shape))
+                            input_shape=settings.input_layer_shape))
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
                             padding='same', kernel_regularizer=regulizer, name='conv1_2'))
     model.add(layers.BatchNormalization())
@@ -54,44 +57,53 @@ def create_model(settings):
                             padding='same', kernel_regularizer=regulizer, name='conv3_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv4_1'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_1'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv4_2'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_2'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv4_3'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv5_1', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_1'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv5_2', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_2'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv5_3', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv6_1', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_1'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv6_2', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_2'))
     model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv6_3', dilation_rate=2))
+                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv7_1'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_1'))
     model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv7_2'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_2'))
     model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv7_3'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_3'))
     model.add(layers.BatchNormalization())
     model.add(layers.UpSampling2D((2, 2)))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv8_1'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_1'))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv8_2'))
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_2'))
     model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv8_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', padding='same', name='pred',
-                            input_shape=(64, 64, 313)))
-    print(model.summary())
+                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_3'))
+    # model.add(layers.BatchNormalization())
+    #model.add(layers.UpSampling2D((2, 2)))
+    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', kernel_initializer=initializer,
+                            strides=(1, 1), padding='same', dilation_rate=1, name='pred',
+                            ))
+    from keras import backend as K
+
+    from keras.activations import softmax
+
+    if not training: # this is run when we are predicting
+        model.add(layers.UpSampling2D((4, 4)))
+
+    #print(model.summary())
     # Sets final parameters and compiles network
     sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay=1e-3, beta_1=0.9, beta_2=0.99,
                                epsilon=1e-07)
@@ -100,7 +112,15 @@ def create_model(settings):
         model.load_weights(load_checkpoint(model))
         print('successfully loaded checkpoint')
 
-    model.compile(loss=settings.loss_function, optimizer=sgd, metrics=["accuracy"])
+    def loss_temp(y_true, y_pred):
+        y_pred_log = K.log(y_pred + K.epsilon())
+        ret = -K.sum(tf.multiply(y_true, y_pred_log))
+        return ret
+
+
+
+
+    model.compile(loss=loss_temp, optimizer=sgd, metrics=["accuracy"])
     return model
 
 
@@ -111,7 +131,7 @@ def create_generator(settings, data_set):
     :param data_set: The chossen data set to generate from (options train, validation, test)
     :return: A generator that generates data from the data_set
     """
-
+    keras_preprocessing.image.iterator.load_img = load_and_crop_img
     if not (data_set == "train" or data_set == "validation" or data_set == "test"):
         raise NotImplementedError("Input data_set does not match allowed options (train, validation, test)")
 
@@ -149,7 +169,7 @@ def pre_process(images, settings, unique_colors):
     inputs = np.zeros((images.shape[0], settings.input_shape[0], settings.input_shape[1], settings.input_shape[2]))
     targets = np.zeros((images.shape[0], settings.output_shape[0], settings.output_shape[1], settings.output_shape[2]))
     for batch in range(images.shape[0]):
-        images[batch] = images[batch]/ 255.0   # Normalize data
+        images[batch] = images[batch] / 255.0  # Normalize data
         images_lab = rgb2lab(images[batch])  # Convert from rgb -> lab format
 
         target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]), cv2.INTER_CUBIC)
@@ -168,6 +188,50 @@ def pre_process(images, settings, unique_colors):
 
         input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
         inputs[batch] = input_batch.reshape((256,256,1))
+
+
+
+        # START FM add to see some images during preprocess
+        if (np.random.uniform() < 0.2) & False:
+            print(images[batch].shape)
+            from skimage.color import lab2rgb
+            from scipy import ndimage
+            import matplotlib.pyplot as plt
+            L = images_lab[:, :, 0]
+            A = images_lab[:, :, 1]
+            B = images_lab[:, :, 2]
+            img_combined = np.swapaxes(np.array(([L, A, B])), 2, 0)  # why do I have to invert A and B
+            picture = lab2rgb(img_combined)
+            rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
+            f = plt.figure(figsize=(40, 12))
+            ax1 = f.add_subplot(131)
+            _ = plt.imshow((rotated_img * 255).astype(np.uint8))
+            plt.title("Combined input image in pre_process")
+            #plt.show()
+
+            L = cv2.resize(images_lab[:, :, 0], (settings.output_shape[0], settings.output_shape[1]))
+
+
+            A = target_batch[:, :, 0]
+            B = target_batch[:, :, 1]
+            img_combined = np.swapaxes(np.array(([L, A, B])), 2, 0)  # why do I have to invert A and B
+            picture = lab2rgb(img_combined)
+            rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
+            ax1 = f.add_subplot(132)
+            _ = plt.imshow((rotated_img * 255).astype(np.uint8))
+            plt.title("Combined target image with one_hot")
+            #plt.show()
+
+            A = unique_colors[np.argmax(onehot_enconding_ab(target_batch, unique_colors), axis=2)][:, :, 0]
+            B = unique_colors[np.argmax(onehot_enconding_ab(target_batch, unique_colors), axis=2)][:, :, 1]
+            img_combined = np.swapaxes(np.array(([L, A, B])), 2, 0)  # why do I have to invert A and B
+            picture = lab2rgb(img_combined)
+            rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
+            ax1 = f.add_subplot(133)
+            _ = plt.imshow((rotated_img * 255).astype(np.uint8))
+            plt.title("Combined input and target image in pre_process")
+            plt.show()
+            # END FM add
 
     return inputs, targets
 
