@@ -1,5 +1,10 @@
 import data_manager as data_manager
 import frechet_inception_difference as fid
+from skimage.color import lab2rgb, rgb2lab
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+from scipy import ndimage
 
 def colorize_benchmark_images(model,show_fid = True):
     data = data_manager.get_benchmark_images()
@@ -11,14 +16,11 @@ def colorize_benchmark_images(model,show_fid = True):
             fid_val = fid.return_fid(colorized, originals[i])
             print("The Frechet Inception Difference is:",fid_val)
         plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
+        plt.savefig('demo{}.png'.format(i), bbox_inches='tight')  # Lucas needs this to compile
 
 
 def plot_output(model, img_lab, img_AB):
-    from skimage.color import lab2rgb, rgb2lab
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import cv2
-    from scipy import ndimage
+
     cs = np.load('dataset/data/color_space.npy')
     out = model.predict(
         np.array(([img_lab])), batch_size=20, verbose=1, steps=None, callbacks=None, max_queue_size=10,
@@ -79,5 +81,5 @@ def plot_output(model, img_lab, img_AB):
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Predicted Gamut")
 
-    plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
+    # plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
     # plt.show()
