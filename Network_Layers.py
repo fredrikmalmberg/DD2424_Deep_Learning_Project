@@ -17,10 +17,11 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
-        tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
+        for idx, g in enumerate(gpus):
+            tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[idx], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     except RuntimeError as e:
         print(e)
@@ -28,7 +29,7 @@ if gpus:
 from data_manager import onehot_enconding_ab
 
 
-def create_model(settings, training = True):
+def create_model(settings, class_weights, training = True):
     """
     Creates a model and compiles it with parameters from the settings file
     :param settings: Settings for the network
@@ -114,7 +115,7 @@ def create_model(settings, training = True):
 
     def loss_temp(y_true, y_pred):
         y_pred_log = K.log(y_pred + K.epsilon())
-        ret = -K.sum(tf.multiply(y_true, y_pred_log))
+        ret = -K.sum(tf.multiply(class_weights, tf.multiply(y_true, y_pred_log)))
         return ret
 
 
@@ -171,8 +172,7 @@ def pre_process(images, settings, unique_colors):
     for batch in range(images.shape[0]):
         images[batch] = images[batch] / 255.0  # Normalize data
         images_lab = rgb2lab(images[batch])  # Convert from rgb -> lab format
-
-        target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]), cv2.INTER_CUBIC)
+        target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]))
         targets[batch] = onehot_enconding_ab(target_batch, unique_colors)
 
         test = np.argmax(targets[0], axis=2)
@@ -188,6 +188,10 @@ def pre_process(images, settings, unique_colors):
 
         input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
         inputs[batch] = input_batch.reshape((256,256,1))
+        # input_batch = cv2.resize(images_lab[:, :, :], (settings.input_shape[0], settings.input_shape[1]))
+
+        # we should center the L channel...
+        inputs[batch] = images_lab[:, :, :1]
 
 
 
@@ -258,19 +262,19 @@ def train_network(settings, class_weight=None):
     :return: A trained model
     """
 
-    model = create_model(settings)
+    model = create_model(settings, class_weight)
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    # checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-    # reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
-    #                                           patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
-    # callbacks_list = [checkpoint, reduced_learning_rate]
+    checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+    reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
+                                              patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
+    callbacks_list = [checkpoint]#, reduced_learning_rate]
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch,
-              class_weight=class_weight)  # , callbacks=callbacks_list)
+              callbacks=callbacks_list)
     execution_time = datetime.now() - start_time
     print("Training done. Execution time for the training was: ", execution_time)
     return model

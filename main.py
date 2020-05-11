@@ -12,12 +12,21 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 def main():
-    # unique_colors = np.load('dataset/data/color_space.npy')  # The list of unique color combinations
-    # train = data_manager.import_data('train', 1)  # this is just for plotting
+    # train = data_manager.import_data('train', 10)  # this is just for plotting
+
+    priors = np.load('trained_models/prior_probs.npy')
+    lamb = 0.5
+    q = 313
+    w = (1 - lamb) * priors + lamb / q
+    w = np.power(w, -1)
+    w.shape
+    w = w / np.sum(np.multiply(priors, w))
+    w = w.astype(np.float32)
+
     settings = dataobjects.settings(313)
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
-    model = train_network(settings)
-    # model_name = data_manager.save_model(model)
+    model = train_network(settings w)
+    model_name = data_manager.save_model(model)
     # evaluate_model(model, settings)
 
     # loaded_model = data_manager.load_model("2020_05_10_16_02")
