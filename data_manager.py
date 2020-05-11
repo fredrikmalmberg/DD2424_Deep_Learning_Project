@@ -154,7 +154,7 @@ def import_data(dataset, batch_size):
     return data
 
 def get_benchmark_images():
-    return import_data("benchmark_images", 3)
+    return import_data("benchmark_images", 4)
 
 def print_picture(picture):
     cv2.imshow('image', picture)
