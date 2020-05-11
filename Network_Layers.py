@@ -22,8 +22,8 @@ if gpus:
             tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[idx], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
+        # tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
     except RuntimeError as e:
         print(e)
 
@@ -95,15 +95,14 @@ def create_model(settings, class_weights, training = True):
                             padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_3'))
     # model.add(layers.BatchNormalization())
     #model.add(layers.UpSampling2D((2, 2)))
-    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', kernel_initializer=initializer,
+    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='linear', kernel_initializer=initializer,
                             strides=(1, 1), padding='same', dilation_rate=1, name='pred',
                             ))
     from keras import backend as K
-
     from keras.activations import softmax
 
     if not training: # this is run when we are predicting
-        model.add(layers.UpSampling2D((4, 4)))
+        model.add(layers.UpSampling2D((4, 4), interpolation='bilinear'))
 
     #print(model.summary())
     # Sets final parameters and compiles network
@@ -115,8 +114,11 @@ def create_model(settings, class_weights, training = True):
         print('successfully loaded checkpoint')
 
     def loss_temp(y_true, y_pred):
-        y_pred_log = K.log(y_pred + K.epsilon())
-        ret = -K.sum(tf.multiply(class_weights, tf.multiply(y_true, y_pred_log)))
+        c_w = tf.convert_to_tensor(class_weights)
+        q_star = K.argmax(y_true, axis=-1)
+        w_q = tf.gather(c_w, q_star)
+        y_pred_log = K.log(softmax(y_pred, axis = -1) + K.epsilon())
+        ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
         return ret
 
 
@@ -192,7 +194,7 @@ def pre_process(images, settings, unique_colors):
         # input_batch = cv2.resize(images_lab[:, :, :], (settings.input_shape[0], settings.input_shape[1]))
 
         # we should center the L channel...
-        inputs[batch] = images_lab[:, :, :1]
+        inputs[batch] = images_lab[:, :, :1] - 50
 
 
 
