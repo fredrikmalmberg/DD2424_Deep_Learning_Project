@@ -30,8 +30,9 @@ class settings:
         self.use_reweighting = False
 
         # Test settings
-        self.from_checkpoint = False #true if loading from previous checkpoint
-        self.test_step_size = 20  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
+        self.from_checkpoint = False  # True if loading from previous checkpoint
+        self.checkpoint_filepath = "checkpoints/2020_05_11_22_51"   # The path and name for the model
+        self.test_step_size = 20      # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
 
         # self.data_directory = "../toy_data/"
         self.data_directory = "dataset/data/"

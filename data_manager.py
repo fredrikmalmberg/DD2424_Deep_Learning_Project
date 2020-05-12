@@ -82,19 +82,19 @@ def save_model(model, name=None):
     if name is None:
         now = datetime.now()
         name = now.strftime("%Y_%m_%d_%H_%M")
-    model.save("trained_models/" + name + ".h5")
+    model.save("trained_models/" + name)
     print("Saved model: {model_name} to disk successfully".format(model_name=name))
     return name
 
 
-def load_model(name):
+def load_model(path_and_name):
     """
     Loads a model from disk with the given param name.
-    :param name: Name of the model to load
+    :param path_and_name: The path and the name to the model to be loaded
     :return: A model
     """
-    model = model_loader("trained_models/" + name + ".h5")
-    print("Loaded model: {model_name} from disk successfully".format(model_name=name))
+    model = model_loader(path_and_name)
+    print("Loaded model: {model_name} from disk successfully".format(model_name=path_and_name))
     return model
 
 

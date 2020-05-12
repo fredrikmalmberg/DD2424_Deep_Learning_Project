@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
-from keras import models, layers, optimizers
+from keras import models, layers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
@@ -12,7 +12,7 @@ from pre_process_crop import load_and_crop_img
 from keras.applications.inception_v3 import preprocess_input
 import keras_preprocessing.image
 import os
-from test_plot import epoch_plot
+from plotting import epoch_plot
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -21,98 +21,98 @@ if gpus:
         for idx, g in enumerate(gpus):
             tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[idx], True)
         # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
-        # tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+        # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     except RuntimeError as e:
         print(e)
 
 from data_manager import onehot_enconding_ab
 
 
-def create_model(settings, class_weights, training = True):
+def create_model(settings, class_weights, training=True):
     """
     Creates a model and compiles it with parameters from the settings file
+    :param model_name: Name of the model to load
+    :param training: If we are training the network or using it for prediction
+    :param class_weights:
     :param settings: Settings for the network
     :return: A compiled model ready to be trained
     """
-    # regulizer = settings.regularizer
-    regulizer = None
-    initializer = settings.kernel_initializer
-    model = models.Sequential()
-
-    model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv1_1',
-                            input_shape=settings.input_layer_shape, use_bias = True))
-    model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
-                            padding='same', kernel_regularizer=regulizer, name='conv1_2'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv2_1'))
-    model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
-                            padding='same', kernel_regularizer=regulizer, name='conv2_2'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv3_1'))
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', kernel_regularizer=regulizer, name='conv3_2'))
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
-                            padding='same', kernel_regularizer=regulizer, name='conv3_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_1'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_2'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_1'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_2'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_1'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_2'))
-    model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_1'))
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_2'))
-    model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_3'))
-    model.add(layers.BatchNormalization())
-    model.add(layers.UpSampling2D((2, 2)))
-    model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_1'))
-    model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_2'))
-    model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                            padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_3'))
-    # model.add(layers.BatchNormalization())
-    #model.add(layers.UpSampling2D((2, 2)))
-    model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='linear', kernel_initializer=initializer,
-                            strides=(1, 1), padding='same', dilation_rate=1, name='pred',
-                            ))
+    if settings.from_checkpoint:
+        model = models.load_model(settings.checkpoint_filepath)
+        print('successfully loaded checkpoint: {model_name}'.format(model_name=settings.checkpoint_filepath))
+    else:
+        # regulizer = settings.regularizer
+        regulizer = None
+        initializer = settings.kernel_initializer
+        model = models.Sequential()
+        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', kernel_regularizer=regulizer, name='conv1_1',
+                                input_shape=settings.input_layer_shape))
+        model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
+                                padding='same', kernel_regularizer=regulizer, name='conv1_2'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', kernel_regularizer=regulizer, name='conv2_1'))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
+                                padding='same', kernel_regularizer=regulizer, name='conv2_2'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', kernel_regularizer=regulizer, name='conv3_1'))
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', kernel_regularizer=regulizer, name='conv3_2'))
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
+                                padding='same', kernel_regularizer=regulizer, name='conv3_3'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_1'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_2'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_3'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_1'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_2'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_3'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_1'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_2'))
+        model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_3'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_1'))
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_2'))
+        model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_3'))
+        model.add(layers.BatchNormalization())
+        model.add(layers.UpSampling2D((2, 2), name='upsample_1'))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_1'))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_2'))
+        model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
+                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_3'))
+        # model.add(layers.BatchNormalization())
+        #model.add(layers.UpSampling2D((2, 2)))
+        model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='linear', kernel_initializer=initializer,
+                                strides=(1, 1), padding='same', dilation_rate=1, name='pred',
+                                ))
     from keras import backend as K
     from keras.activations import softmax
 
-    if not training: # this is run when we are predicting
-        model.add(layers.UpSampling2D((4, 4), interpolation='bilinear'))
+    if not training:  # this is run when we are predicting
+        model.add(layers.UpSampling2D((4, 4), interpolation='bilinear', name='upsample_2_predict'))
 
-    #print(model.summary())
+    # print(model.summary())
     # Sets final parameters and compiles network
     sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay=1e-3, beta_1=0.9, beta_2=0.99,
                                epsilon=1e-07)
-
-    if settings.from_checkpoint:
-        model.load_weights(load_checkpoint(model))
-        print('successfully loaded checkpoint')
 
     def loss_temp(y_true, y_pred):
         c_w = tf.convert_to_tensor(class_weights)
@@ -121,9 +121,6 @@ def create_model(settings, class_weights, training = True):
         y_pred_log = K.log(softmax(y_pred, axis = -1) + K.epsilon())
         ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
         return ret
-
-
-
 
     model.compile(loss=loss_temp, optimizer=sgd, metrics=["accuracy"])
     return model
@@ -198,18 +195,12 @@ def pre_process(images, settings, unique_colors):
         # we should center the L channel...
         inputs[batch] = images_lab[:, :, :1] - 50
 
-
-
         # START FM add to see some images during preprocess
         if (np.random.uniform() < 0.2) & False:
             print(images[batch].shape)
             from skimage.color import lab2rgb
             from scipy import ndimage
             import matplotlib.pyplot as plt
-            #print("normalized L")
-            #print(images_lab[:, :, :1] - 50)
-            #print(np.max(images_lab[:, :, :1] - 50))
-            #print(np.min(images_lab[:, :, :1] - 50))
             L = images_lab[:, :, 0]
             A = images_lab[:, :, 1]
             B = images_lab[:, :, 2]
@@ -220,7 +211,7 @@ def pre_process(images, settings, unique_colors):
             ax1 = f.add_subplot(131)
             _ = plt.imshow((rotated_img * 255).astype(np.uint8))
             plt.title("Combined input image in pre_process")
-            #plt.show()
+            # plt.show()
             L = cv2.resize(images_lab[:, :, 0], (settings.output_shape[0], settings.output_shape[1]))
 
             A = target_batch[:, :, 0]
@@ -231,7 +222,7 @@ def pre_process(images, settings, unique_colors):
             ax1 = f.add_subplot(132)
             _ = plt.imshow((rotated_img * 255).astype(np.uint8))
             plt.title("Combined target image with one_hot")
-            #plt.show()
+            # plt.show()
 
             A = unique_colors[np.argmax(onehot_enconding_ab(target_batch, unique_colors), axis=2)][:, :, 0]
             B = unique_colors[np.argmax(onehot_enconding_ab(target_batch, unique_colors), axis=2)][:, :, 1]
@@ -278,7 +269,7 @@ def train_network(settings, class_weight=None):
     reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                               patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
     if settings.plot_during_training:
-        callbacks_list = [checkpoint, print_stuff]#, reduced_learning_rate]
+        callbacks_list = get_callback_functions(settings, model, class_weight, use_reducing_lr=False)
     else:
         callbacks_list = [checkpoint]
     print("Starting to train the network")
@@ -289,6 +280,32 @@ def train_network(settings, class_weight=None):
     execution_time = datetime.now() - start_time
     print("Training done. Execution time for the training was: ", execution_time)
     return model
+
+
+def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True):
+    """
+    Returns callback functions used when training
+    :param use_reducing_lr: bool toggle for reducing learning rate
+    :param use_plotting: bool toggle for plotting predicting (colorize) a picture after each epoch
+    :param use_checkpoint: bool toggle for saving the best found model according to the validation set during training
+    :param settings: Settings object with chosen parameters
+    :param model: The model to be trained
+    :param class_weight:
+    :return: List of callback functions used when training
+    """
+    callbacks_list = []
+    if use_checkpoint:
+        time_started = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        callbacks_list.append(ModelCheckpoint('checkpoints/'+time_started,
+                                              monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
+    if use_plotting:
+        callbacks_list.append(
+            epoch_plot(settings, model, class_weight, 'dataset/data/train/n01443537/n01443537_1088.JPEG'))
+    if use_reducing_lr:
+        callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
+                                                patience=settings.patience, min_lr=settings.min_learning_rate,
+                                                verbose=1))
+    return callbacks_list
 
 
 def evaluate_model(model, settings, verbose=1):
