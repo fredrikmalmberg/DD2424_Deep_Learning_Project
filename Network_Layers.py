@@ -122,7 +122,7 @@ def create_generator(settings, data_set):
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None,
-                                                         interpolation = 'lanczos:random', shuffle=False)
+                                                         interpolation='lanczos:random')
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -158,15 +158,6 @@ def pre_process(images, settings, unique_colors):
         targets[batch] = onehot_enconding_ab(target_batch, unique_colors)
 
         test = np.argmax(targets[0], axis=2)
-
-        # TODO: RE WEIGHT HERE
-
-        if settings.use_reweighting:
-            lamda = 0.5
-            q = targets[batch].shape[2]
-            reweighted = (1 - lamda) * targets[batch] + lamda / q
-
-            targets[batch] = np.power(reweighted, -1)
 
         # input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
         # inputs[batch] = input_batch.reshape((256,256,1))
@@ -218,20 +209,6 @@ def pre_process(images, settings, unique_colors):
     return inputs, targets
 
 
-def load_checkpoint(model):
-    """
-    Load the best checkpoint from the most recent training
-    :param: model
-    :return: weight file from checkpoint
-    """
-    path = 'checkpoints/'
-    files = os.listdir(path)
-    paths = [os.path.join(path, basename) for basename in files]
-    checkpoint = max(paths, key=os.path.getctime)
-
-    return checkpoint
-
-
 def train_network(settings, class_weight=None):
     """
     Trains the network with settings given by the settings object and found classes in unique_colors
@@ -244,14 +221,7 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01440764/n01440764_141.JPEG')
-    reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
-                                              patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
-    if settings.plot_during_training:
-        callbacks_list = get_callback_functions(settings, model, class_weight, use_reducing_lr=False)
-    else:
-        callbacks_list = [checkpoint]
+    callbacks_list = get_callback_functions(settings, model, class_weight)
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
@@ -280,7 +250,7 @@ def get_callback_functions(settings, model, class_weight, use_checkpoint=True, u
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
     if use_plotting:
         callbacks_list.append(
-            epoch_plot(settings, model, class_weight, 'dataset/data/train/n01443537/n01443537_1088.JPEG'))
+            epoch_plot(settings, model, class_weight, 'dataset/all_data/train_overfit/iamFolder/n01443537_1088.JPEG'))
     if use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
