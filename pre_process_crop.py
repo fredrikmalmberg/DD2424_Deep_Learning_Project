@@ -47,7 +47,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
                                                    interpolation=interpolation)
 
     # Crop fraction of total image
-    crop_fraction = 0.10
+    crop_fraction = 0.2
     target_width = target_size[1]
     target_height = target_size[0]
 

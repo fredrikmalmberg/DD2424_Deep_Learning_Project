@@ -40,9 +40,10 @@ def create_model(settings, class_weights, training = True):
     regulizer = None
     initializer = settings.kernel_initializer
     model = models.Sequential()
+
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                             padding='same', kernel_regularizer=regulizer, name='conv1_1',
-                            input_shape=settings.input_layer_shape))
+                            input_shape=settings.input_layer_shape, use_bias = True))
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(2, 2),
                             padding='same', kernel_regularizer=regulizer, name='conv1_2'))
     model.add(layers.BatchNormalization())
@@ -143,7 +144,8 @@ def create_generator(settings, data_set):
     target_size = (settings.input_shape[0], settings.input_shape[1])  # Target the size the images will be resize to
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
-                                                         batch_size=settings.batch_size, class_mode=None)
+                                                         batch_size=settings.batch_size, class_mode=None,
+                                                         interpolation = 'lanczos:random',)
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -189,8 +191,8 @@ def pre_process(images, settings, unique_colors):
 
             targets[batch] = np.power(reweighted, -1)
 
-        input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
-        inputs[batch] = input_batch.reshape((256,256,1))
+        # input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
+        # inputs[batch] = input_batch.reshape((256,256,1))
         # input_batch = cv2.resize(images_lab[:, :, :], (settings.input_shape[0], settings.input_shape[1]))
 
         # we should center the L channel...
@@ -204,6 +206,10 @@ def pre_process(images, settings, unique_colors):
             from skimage.color import lab2rgb
             from scipy import ndimage
             import matplotlib.pyplot as plt
+            #print("normalized L")
+            #print(images_lab[:, :, :1] - 50)
+            #print(np.max(images_lab[:, :, :1] - 50))
+            #print(np.min(images_lab[:, :, :1] - 50))
             L = images_lab[:, :, 0]
             A = images_lab[:, :, 1]
             B = images_lab[:, :, 2]
@@ -215,9 +221,7 @@ def pre_process(images, settings, unique_colors):
             _ = plt.imshow((rotated_img * 255).astype(np.uint8))
             plt.title("Combined input image in pre_process")
             #plt.show()
-
             L = cv2.resize(images_lab[:, :, 0], (settings.output_shape[0], settings.output_shape[1]))
-
 
             A = target_batch[:, :, 0]
             B = target_batch[:, :, 1]
@@ -270,10 +274,13 @@ def train_network(settings, class_weight=None):
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01443537/n01443537_1088.JPEG')
+    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01440764/n01440764_141.JPEG')
     reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                               patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
-    callbacks_list = [checkpoint, print_stuff]#, reduced_learning_rate]
+    if settings.plot_during_training:
+        callbacks_list = [checkpoint, print_stuff]#, reduced_learning_rate]
+    else:
+        callbacks_list = [checkpoint]
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,

@@ -16,10 +16,12 @@ class settings:
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
-        self.nr_epochs = 100
-        self.training_steps_per_epoch = 1
-        self.validation_steps_per_epoch = 1
-        self.batch_size = 1  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+        self.plot_during_training = True
+        self.plot_every_n_batch = 5
+        self.nr_epochs = 3
+        self.training_steps_per_epoch = 500
+        self.validation_steps_per_epoch = 4
+        self.batch_size = 8  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
         self.learning_rate = 3e-5  # Learning rate of the training
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to
@@ -31,7 +33,9 @@ class settings:
         self.from_checkpoint = False #true if loading from previous checkpoint
         self.test_step_size = 20  # 700                # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
 
+        # self.data_directory = "../toy_data/"
         self.data_directory = "dataset/data/"
+        # self.data_directory = "../data/ILSVRC/Data/CLS-LOC/"
 
     def print_training_settings(self):
         print("Settings for the training:\nNumber of epochs: {nr_epochs}, Batch size: {batch_size}, "
