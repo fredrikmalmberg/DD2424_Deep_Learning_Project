@@ -9,6 +9,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from pre_process_crop import load_and_crop_img
+from keras.applications.inception_v3 import preprocess_input
 import keras_preprocessing.image
 import os
 from plotting import epoch_plot
@@ -140,7 +141,8 @@ def create_generator(settings, data_set):
     target_size = (settings.input_shape[0], settings.input_shape[1])  # Target the size the images will be resize to
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
-                                                         batch_size=settings.batch_size, class_mode=None)
+                                                         batch_size=settings.batch_size, class_mode=None,
+                                                         interpolation = 'lanczos:random',)
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -186,9 +188,8 @@ def pre_process(images, settings, unique_colors):
 
             targets[batch] = np.power(reweighted, -1)
 
-        input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]),
-                                 cv2.INTER_CUBIC)
-        inputs[batch] = input_batch.reshape((256, 256, 1))
+        # input_batch = cv2.resize(images_lab[:, :, :1], (settings.input_shape[0], settings.input_shape[1]), cv2.INTER_CUBIC)
+        # inputs[batch] = input_batch.reshape((256,256,1))
         # input_batch = cv2.resize(images_lab[:, :, :], (settings.input_shape[0], settings.input_shape[1]))
 
         # we should center the L channel...
@@ -211,7 +212,6 @@ def pre_process(images, settings, unique_colors):
             _ = plt.imshow((rotated_img * 255).astype(np.uint8))
             plt.title("Combined input image in pre_process")
             # plt.show()
-
             L = cv2.resize(images_lab[:, :, 0], (settings.output_shape[0], settings.output_shape[1]))
 
             A = target_batch[:, :, 0]
@@ -264,7 +264,14 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    callbacks_list = get_callback_functions(settings, model, class_weight, use_reducing_lr=False)
+    checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01440764/n01440764_141.JPEG')
+    reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
+                                              patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
+    if settings.plot_during_training:
+        callbacks_list = get_callback_functions(settings, model, class_weight, use_reducing_lr=False)
+    else:
+        callbacks_list = [checkpoint]
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
