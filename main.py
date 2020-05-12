@@ -7,10 +7,17 @@ from plotting import plot_output, colorize_benchmark_images
 
 
 
+
 warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 def main():
+    from numpy.random import seed
+    seed(12)
+    import tensorflow as tf
+    tf.random.set_seed(12)
+
+
     # train = data_manager.import_data('train', 10)  # this is just for plotting
 
     priors = np.load('trained_models/prior_probs.npy')
@@ -24,7 +31,7 @@ def main():
 
     settings = dataobjects.settings(313)
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
-    # model = train_network(settings, w)
+    model = train_network(settings, w)
     # model_name = data_manager.save_model(model)
     # evaluate_model(model, settings)
 

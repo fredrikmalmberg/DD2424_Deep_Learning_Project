@@ -35,7 +35,7 @@ class epoch_plot(keras.callbacks.Callback):
             self.plot(self.settings, self.model, self.w, self.img)
 
     def plot(self, settings, model, w, image_path, logs=None):
-        predictModel = Network_Layers.create_model(settings, w, training=False)
+        predictModel = Network_Layers.create_model(settings, training=False)
         predictModel.set_weights(model.get_weights())
 
         cs = np.load('dataset/data/color_space.npy')

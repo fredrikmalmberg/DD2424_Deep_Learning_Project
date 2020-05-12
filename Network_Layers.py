@@ -4,12 +4,11 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
-from keras import models, layers
+from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from pre_process_crop import load_and_crop_img
-from keras.applications.inception_v3 import preprocess_input
 import keras_preprocessing.image
 import os
 from plotting import epoch_plot
@@ -28,12 +27,10 @@ if gpus:
 from data_manager import onehot_enconding_ab
 
 
-def create_model(settings, class_weights, training=True):
+def create_model(settings, training=True):
     """
     Creates a model and compiles it with parameters from the settings file
-    :param model_name: Name of the model to load
     :param training: If we are training the network or using it for prediction
-    :param class_weights:
     :param settings: Settings for the network
     :return: A compiled model ready to be trained
     """
@@ -41,8 +38,7 @@ def create_model(settings, class_weights, training=True):
         model = models.load_model(settings.checkpoint_filepath)
         print('successfully loaded checkpoint: {model_name}'.format(model_name=settings.checkpoint_filepath))
     else:
-        # regulizer = settings.regularizer
-        regulizer = None
+        regulizer = settings.regularizer
         initializer = settings.kernel_initializer
         model = models.Sequential()
         model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
@@ -64,11 +60,11 @@ def create_model(settings, class_weights, training=True):
                                 padding='same', kernel_regularizer=regulizer, name='conv3_3'))
         model.add(layers.BatchNormalization())
         model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_1'))
+                                padding='same', kernel_regularizer=regulizer, name='conv4_1'))
         model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_2'))
+                                padding='same', kernel_regularizer=regulizer, name='conv4_2'))
         model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv4_3'))
+                                padding='same', kernel_regularizer=regulizer, name='conv4_3'))
         model.add(layers.BatchNormalization())
         model.add(layers.Conv2D(512, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                                 padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv5_1'))
@@ -85,44 +81,28 @@ def create_model(settings, class_weights, training=True):
                                 padding='same', dilation_rate=2, kernel_regularizer=regulizer, name='conv6_3'))
         model.add(layers.BatchNormalization())
         model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_1'))
+                                padding='same', kernel_regularizer=regulizer, name='conv7_1'))
         model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_2'))
+                                padding='same', kernel_regularizer=regulizer, name='conv7_2'))
         model.add(layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv7_3'))
+                                padding='same', kernel_regularizer=regulizer, name='conv7_3'))
         model.add(layers.BatchNormalization())
-        model.add(layers.UpSampling2D((2, 2), name='upsample_1'))
+        model.add(layers.UpSampling2D(size=(2, 2), name='upsample_1'))
         model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_1'))
+                                padding='same', kernel_regularizer=regulizer, name='conv8_1'))
         model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_2'))
+                                padding='same', kernel_regularizer=regulizer, name='conv8_2'))
         model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
-                                padding='same', dilation_rate=1, kernel_regularizer=regulizer, name='conv8_3'))
-        # model.add(layers.BatchNormalization())
-        #model.add(layers.UpSampling2D((2, 2)))
-        model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='linear', kernel_initializer=initializer,
-                                strides=(1, 1), padding='same', dilation_rate=1, name='pred',
-                                ))
-    from keras import backend as K
-    from keras.activations import softmax
+                                padding='same', kernel_regularizer=regulizer, name='conv8_3'))
+        model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', kernel_initializer=initializer,
+                                strides=(1, 1), padding='same', dilation_rate=1, name='pred',))
 
     if not training:  # this is run when we are predicting
         model.add(layers.UpSampling2D((4, 4), interpolation='bilinear', name='upsample_2_predict'))
 
-    # print(model.summary())
     # Sets final parameters and compiles network
-    sgd = tfa.optimizers.AdamW(learning_rate=settings.learning_rate, weight_decay=1e-3, beta_1=0.9, beta_2=0.99,
-                               epsilon=1e-07)
-
-    def loss_temp(y_true, y_pred):
-        c_w = tf.convert_to_tensor(class_weights)
-        q_star = K.argmax(y_true, axis=-1)
-        w_q = tf.gather(c_w, q_star)
-        y_pred_log = K.log(softmax(y_pred, axis = -1) + K.epsilon())
-        ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
-        return ret
-
-    model.compile(loss=loss_temp, optimizer=sgd, metrics=["accuracy"])
+    adam = optimizers.Adam(learning_rate=settings.learning_rate, decay=1e-3, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
+    model.compile(loss=settings.loss_function, optimizer=adam, metrics=["accuracy"])
     return model
 
 
@@ -142,7 +122,7 @@ def create_generator(settings, data_set):
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None,
-                                                         interpolation = 'lanczos:random',)
+                                                         interpolation = 'lanczos:random', shuffle=False)
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -260,7 +240,7 @@ def train_network(settings, class_weight=None):
     :return: A trained model
     """
 
-    model = create_model(settings, class_weight)
+    model = create_model(settings)
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
