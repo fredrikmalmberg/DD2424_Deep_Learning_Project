@@ -101,7 +101,7 @@ def create_model(settings, training=True):
         model.add(layers.UpSampling2D((4, 4), interpolation='bilinear', name='upsample_2_predict'))
 
     # Sets final parameters and compiles network
-    adam = optimizers.Adam(learning_rate=settings.learning_rate, decay=1e-3, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
+    adam = optimizers.Adam(learning_rate=settings.learning_rate, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
     model.compile(loss=settings.loss_function, optimizer=adam, metrics=["accuracy"])
     return model
 
@@ -221,7 +221,7 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    callbacks_list = get_callback_functions(settings, model, class_weight)
+    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=False)
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
