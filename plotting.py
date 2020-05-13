@@ -1,26 +1,27 @@
-import cv2
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 from skimage.color import lab2rgb, rgb2lab
+from skimage import io
 
-import Network_Layers
+from model import create_model
+from data_manager import onehot_enconding_ab
 import data_manager as data_manager
 import frechet_inception_difference as fid
 
 
-def colorize_benchmark_images(model, show_fid=True):
-    data = data_manager.get_benchmark_images()
-    if show_fid:
-        originals = fid.return_benchmark_originals()
-    for i in range(data['input'].shape[0]):
-        if show_fid:
-            colorized = fid.return_colorized(model, data['input'][i][:, :, :])
-            fid_val = fid.return_fid(colorized, originals[i])
-            print("The Frechet Inception Difference is:", fid_val)
-        plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
-        plt.savefig('demo{}.png'.format(i), bbox_inches='tight')  # Lucas needs this to compile
+# def colorize_benchmark_images(model, show_fid=True):
+#     data = data_manager.get_benchmark_images()
+#     if show_fid:
+#         originals = fid.return_benchmark_originals()
+#     for i in range(data['input'].shape[0]):
+#         if show_fid:
+#             colorized = fid.return_colorized(model, data['input'][i][:, :, :])
+#             fid_val = fid.return_fid(colorized, originals[i])
+#             print("The Frechet Inception Difference is:", fid_val)
+#         plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
+#         plt.savefig('demo{}.png'.format(i), bbox_inches='tight')  # Lucas needs this to compile
 
 
 class epoch_plot(keras.callbacks.Callback):
@@ -32,114 +33,204 @@ class epoch_plot(keras.callbacks.Callback):
 
     def on_train_batch_begin(self, batch, logs=None):
         if batch % self.settings.training_steps_per_epoch == 0:
-            self.plot(self.settings, self.model, self.w, self.img)
+            plot_prediction(self.settings, self.model, self.w, self.img)
 
-    def plot(self, settings, model, w, image_path, logs=None):
-        predictModel = Network_Layers.create_model(settings, training=False)
-        predictModel.set_weights(model.get_weights())
-
-        cs = np.load('dataset/data/color_space.npy')
-        picture = cv2.imread(image_path)
-        img = rgb2lab(picture)
-        L = img[:, :, :1]
-
-        out = predictModel.predict(
-            np.array(([L])), batch_size=1, verbose=1)
-        img_predict = out[0, :, :, :]
-
-        A = cs[np.argmax(img_predict, axis=2)][:, :, 0]
-        B = cs[np.argmax(img_predict, axis=2)][:, :, 1]
-        L = np.clip(L[:, :, 0], a_min=0, a_max=100)
-
-        diff1 = A.shape[0] - L.shape[0]
-        diff2 = A.shape[1] - L.shape[1]
-        A = np.clip(A[int(diff1 // 2):-int(diff1 - diff1 // 2), int(diff2 // 2):-int(diff2 - diff2 // 2)], a_min=-110,
-                    a_max=110)
-        B = np.clip(B[int(diff1 // 2):-int(diff1 - diff1 // 2), int(diff2 // 2):-int(diff2 - diff2 // 2)], a_min=-110,
-                    a_max=110)
-        dpi = 80
-        img_combined = np.swapaxes(np.array(([L, A, B])), 2, 0)  # why do I have to invert A and B
-        picture = lab2rgb(img_combined.astype(np.float64))
-        rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
-
-        f = plt.figure(figsize=(10, 20))
-        ax1 = f.add_subplot(121)
-        imgplot = plt.imshow((rotated_img * 255).astype(np.uint8))
-        plt.title("Combined prediction")
-
-        L = np.ones(A.shape) * 50
-        img_combined = np.swapaxes(np.array(([L, A, B])), 2, 0)  # why do I have to invert A and B
-        picture = lab2rgb(img_combined)
-        rotated_img = np.flip(ndimage.rotate(picture, -90), axis=1)
-
-        ax1 = f.add_subplot(122)
-        imgplot = plt.imshow((rotated_img * 255).astype(np.uint8), interpolation='none')
-        plt.title("Only color")
-        plt.show()
-        del predictModel
-        return self
-
-
-def plot_output(model, img_lab, img_AB):
+def plot_prediction(settings, model, w, image_path):
+    # This functions makes a prediction given an image path and plots it
+    # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
-    out = model.predict(
-        np.array(([img_lab])), batch_size=20, verbose=1, steps=None, callbacks=None, max_queue_size=10,
-        workers=1, use_multiprocessing=False
-    )
 
+    # And the image
+    rgb_image  = get_rgb_from_path(image_path)
+
+    # Getting LAB channels from rgb image
+    L, A, B = get_lab_channels_from_rgb(rgb_image)
+
+    # Reshaping input to fit model
+    input_to_model = np.empty((1,L.shape[0], L.shape[1], 1))
+    input_to_model[0, :, :, 0] = L - 50 # We train with shifted L so lets use it here as well
+
+    # Creating a new model, setting weights and predicting
+    predictModel = create_model(settings, w, training=False)
+    predictModel.set_weights(model.get_weights())
+    out = predictModel.predict(input_to_model, batch_size=1, verbose=1)
+
+    # Removing the model
+    del predictModel
+
+    # Getting single image from prediction
     img_predict = out[0, :, :, :]
-    # img_L = img_lab
-    A = cs[np.argmax(img_predict, axis=2)][:, :, 0].T
-    B = cs[np.argmax(img_predict, axis=2)][:, :, 1].T
-    L = cv2.resize(img_lab, (64, 64))
 
-    f = plt.figure(figsize=(20, 6))
-    ax = f.add_subplot(141)
-    img_combined = np.swapaxes(np.array(([L, -A.T, -B.T])), 2, 0)  # why do I have to invert A and B
-    rotated_img = np.flip(ndimage.rotate(lab2rgb(img_combined), -90), axis=1)
-    imgplot = plt.imshow((rotated_img * 255).astype(np.uint8))
-    plt.title("Combined result")
+    # Picking out the A and B values from the predicted bins
+    A = cs[np.argmax(img_predict, axis=2)][:, :, 0]
+    B = cs[np.argmax(img_predict, axis=2)][:, :, 1]
 
-    # and just the colour tone
-    plt.subplot(1, 4, 2)
-    lum = np.ones(A.shape) * 50
-    img_combined = np.swapaxes(np.array(([lum, -A.T, -B.T])), 2, 0)  # why do I have to invert A and B
-    rotated_img = np.flip(ndimage.rotate(lab2rgb(img_combined), -90), axis=1)
-    imgplot = plt.imshow((rotated_img * 255).astype(np.uint8))
-    plt.title("Color tone")
+    # Some magic to match dimensions since we are losing a few pixels in the forward pass
+    diff1 = A.shape[0] - L.shape[0]
+    diff2 = A.shape[1] - L.shape[1]
+    crop1 = int(diff1 // 2)
+    crop2 = -int(diff1 - diff1 // 2)
+    crop3 = int(diff2 // 2)
+    crop4 = -int(diff2 - diff2 // 2)
 
-    plt.subplot(1, 4, 3)
+    # Cropping (and clipping is probably not needed if color space is correct)
+    A = np.clip(A[crop1:crop2, crop3:crop4], a_min=-110, a_max=110)
+    B = np.clip(B[crop1:crop2, crop3:crop4], a_min=-110, a_max=110)
+
+    # Putting the image back together
+    lab_image = combine_lab(L, A, B)
+
+    # Back to rgb for plotting
+    predicted_rgb_image = lab2rgb(lab_image)
+    f = plt.figure(figsize=(10, 20))
+    ax1 = f.add_subplot(121)
+    imgplot = plt.imshow(predicted_rgb_image)
+    plt.title("Combined prediction")
+
+
+    # Just AB plotting
+    lab_image = combine_lab_no_l_channel(A, B)
+    predicted_rgb_image = lab2rgb(lab_image)
+    ax1 = f.add_subplot(122)
+    imgplot = plt.imshow(predicted_rgb_image)
+    plt.title("A B prediction")
+
+    plt.show()
+    print("Predicted values for L, A & B: ")
+    print("L: {} to {}.".format(np.min(L), np.max(L)))
+    print("A: {} to {}.".format(np.min(A), np.max(A)))
+    print("B: {} to {}.".format(np.min(B), np.max(B)))
+
+    return
+
+def plot_unique_colours_gamut(unique_colors):
+    # Plots the gamut that we are using ie the color of the bins
     grid = np.ones((22, 22))
-    gamut = np.sum(np.sum(img_AB, axis=0), axis=0)
+    L = np.ones(grid.shape) * 50
+    A = np.ones(grid.shape)
+    B = np.ones(grid.shape)
     for i in range(-110, 110, 10):
         for j in range(-110, 110, 10):
-            if np.any(np.all(np.array(([i, j])) == cs, axis=1)):
-                for idx, c in enumerate(cs):
+            if np.any(np.all(np.array(([i, j])) == unique_colors, axis=1)):
+                for idx, c in enumerate(unique_colors):
+                    if np.all(np.array(([i, j])) == c):
+                        A[11 + int(i / 10), int(11 + j / 10)] = unique_colors[idx][0]
+                        B[11 + int(i / 10), int(11 + j / 10)] = unique_colors[idx][1]
+            else:
+                L[11 + int(i / 10), int(11 + j / 10)] = 0
+
+    img_combined = combine_lab(L,A,B)
+    picture = lab2rgb(img_combined)
+    _ = plt.imshow(picture)
+    plt.yticks(range(22), range(110, -110, -10))
+    plt.xticks(range(22), range(-110, 110, 10))
+    plt.title("Gamut for unique colours")
+    plt.show()
+
+def plot_weights_gamut(unique_colors, priors):
+    # Plots the gamut that we are using ie the color of the bins
+    grid = np.ones((22, 22))
+    gamut = priors
+    for i in range(-110, 110, 10):
+        for j in range(-110, 110, 10):
+            if np.any(np.all(np.array(([i, j])) == unique_colors, axis=1)):
+                for idx, c in enumerate(unique_colors):
                     if np.all(np.array(([i, j])) == c):
                         grid[11 + int(i / 10), int(11 + j / 10)] += gamut[idx]
             else:
-                grid[11 + int(i / 10), int(11 + j / 10)] = -300
-
+                grid[11 + int(i / 10), int(11 + j / 10)] = 0
     plt.imshow(grid, cmap='inferno')
     plt.yticks(range(22), range(110, -110, -10))
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Original Gamut")
+    plt.show()
 
-    plt.subplot(1, 4, 4)
+def combine_lab(L,A,B):
+    # Combines LAB to image
+    img_combined = np.zeros(([A.shape[0], A.shape[1], 3]))
+    img_combined[:, :, 0] = L
+    img_combined[:, :, 1] = A
+    img_combined[:, :, 2] = B
+    return img_combined
+
+def combine_lab_no_l_channel(A,B):
+    # Combines A and B with a solid L to showcase colors only
+    img_combined = np.zeros(([A.shape[0], A.shape[1], 3]))
+    L = np.ones(A.shape)*50
+    img_combined[:, :, 0] = L
+    img_combined[:, :, 1] = A
+    img_combined[:, :, 2] = B
+    return img_combined
+
+def get_rgb_from_path(path):
+    return io.imread(path)
+
+def get_rgb_from_lab(lab_image):
+    return lab2rgb(lab_image)
+
+def get_lab_channels_from_rgb(rgb_image):
+    # Returns the LAB channels from RGB image
+    images_lab = rgb2lab(rgb_image)
+    L = images_lab[:, :, 0]
+    A = images_lab[:, :, 1]
+    B = images_lab[:, :, 2]
+    return L, A, B
+
+def plot_gamut_from_bins(img_AB, unique_colors):
+    # Plots the gamut of an image
     grid = np.ones((22, 22))
-    gamut = np.sum(np.sum(img_predict, axis=0), axis=0)
+    gamut = np.sum(np.sum(img_AB, axis=0), axis=0)
     for i in range(-110, 110, 10):
         for j in range(-110, 110, 10):
-            if np.any(np.all(np.array(([i, j])) == cs, axis=1)):
-                for idx, c in enumerate(cs):
+            if np.any(np.all(np.array(([i, j])) == unique_colors, axis=1)):
+                for idx, c in enumerate(unique_colors):
                     if np.all(np.array(([i, j])) == c):
                         grid[11 + int(i / 10), int(11 + j / 10)] += gamut[idx]
             else:
-                grid[11 + int(i / 10), int(11 + j / 10)] = -300
+                grid[11 + int(i / 10), int(11 + j / 10)] = 0
     plt.imshow(grid, cmap='inferno')
     plt.yticks(range(22), range(110, -110, -10))
     plt.xticks(range(22), range(-110, 110, 10))
-    plt.title("Predicted Gamut")
-
-    # plt.savefig('demo.png', bbox_inches='tight') # Lucas needs this to compile
+    plt.title("Original Gamut")
     plt.show()
+
+def plotting_demo():
+    # This is just to show the different plotting functions
+    # lets print the unique color bins
+    unique_colors = np.load('dataset/data/color_space.npy')
+
+    # first we try to read, split to lab, recombine and print
+    image_path = 'dataset/data/train/n01440764/n01440764_141.JPEG'
+    rgb_image = get_rgb_from_path(image_path)
+    L, A, B = get_lab_channels_from_rgb(rgb_image)
+    img_combined = combine_lab(L, A, B)
+    picture = get_rgb_from_lab(img_combined)
+    f = plt.figure(figsize=(10, 12))
+    ax1 = f.add_subplot(131)
+    _ = plt.imshow(picture)
+    plt.title("Combined input image in pre_process")
+
+    # Then lets try to recombine from one hot encoded bin values for A and B
+    A = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
+    B = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
+    img_combined = combine_lab(L, A, B)
+    picture = get_rgb_from_lab(img_combined)
+    ax1 = f.add_subplot(132)
+    _ = plt.imshow(picture)
+    plt.title("Combined input image with one_hot")
+
+    # Then just the AB channels
+    A = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
+    B = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
+    img_combined = combine_lab_no_l_channel(A, B)
+    picture = get_rgb_from_lab(img_combined)
+    ax1 = f.add_subplot(133)
+    _ = plt.imshow(picture)
+    plt.title("Input image with one_hot")
+    plt.show()
+
+    img_AB = onehot_enconding_ab(np.array(([A, B])).T, unique_colors)
+    plot_gamut_from_bins(img_AB, unique_colors)
+
+    # plot uniques
+    plot_unique_colours_gamut(unique_colors)

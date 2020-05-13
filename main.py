@@ -1,23 +1,13 @@
 import warnings
 import numpy as np
 import dataobjects
-from Network_Layers import train_network, evaluate_model
+from Network_Layers import train_network
 import data_manager
-from plotting import plot_output, colorize_benchmark_images
-
-
-
 
 warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 def main():
-    from numpy.random import seed
-    seed(12)
-    import tensorflow as tf
-    tf.random.set_seed(12)
-
-
     # train = data_manager.import_data('train', 10)  # this is just for plotting
 
     priors = np.load('trained_models/prior_probs.npy')

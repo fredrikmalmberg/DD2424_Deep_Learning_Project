@@ -17,6 +17,7 @@ class settings:
 
         # Training settings
         self.plot_during_training = True
+        self.plot_random_imgs_from_generator = False
         self.plot_every_n_batch = 5
         self.nr_epochs = 100
         self.training_steps_per_epoch = 1764     # Nr dogs training images after split = 12348/7 = 1764
