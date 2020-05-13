@@ -11,7 +11,7 @@ from plotting import combine_lab, epoch_plot
 import keras_preprocessing.image
 from model import create_model
 from skimage.color import lab2rgb
-
+import data_manager
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -24,7 +24,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-from data_manager import onehot_enconding_ab
+from data_manager import get_soft_enconding_ab
 
 
 def create_generator(settings, data_set):
@@ -76,7 +76,7 @@ def pre_process(images, settings, unique_colors):
         images[batch] = images[batch] / 255.0  # Normalize data
         images_lab = rgb2lab(images[batch])  # Convert from rgb -> lab format
         target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]))
-        targets[batch] = onehot_enconding_ab(target_batch, unique_colors)
+        targets[batch] = get_soft_enconding_ab(target_batch, unique_colors)
 
         # TODO: RE WEIGHT HERE
         # if settings.use_reweighting:
@@ -116,7 +116,7 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=False)
+    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=True)
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
@@ -145,7 +145,7 @@ def get_callback_functions(settings, model, class_weight, use_checkpoint=True, u
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
     if use_plotting:
         callbacks_list.append(
-            epoch_plot(settings, model, class_weight, 'dataset/all_data/train_overfit/iamFolder/n01443537_1088.JPEG'))
+            epoch_plot(settings, model, class_weight, 'dataset/dogs/validation/n02085620-Chihuahua/n02085620_199.jpg'))
     if use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,

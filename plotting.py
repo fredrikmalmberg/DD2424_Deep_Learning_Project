@@ -6,7 +6,7 @@ from skimage.color import lab2rgb, rgb2lab
 from skimage import io
 
 from model import create_model
-from data_manager import onehot_enconding_ab
+from data_manager import get_soft_enconding_ab
 import data_manager as data_manager
 import frechet_inception_difference as fid
 
@@ -211,8 +211,8 @@ def plotting_demo():
     plt.title("Combined input image in pre_process")
 
     # Then lets try to recombine from one hot encoded bin values for A and B
-    A = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
-    B = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
+    A = unique_colors[np.argmax(get_soft_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
+    B = unique_colors[np.argmax(get_soft_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
     img_combined = combine_lab(L, A, B)
     picture = get_rgb_from_lab(img_combined)
     ax1 = f.add_subplot(132)
@@ -220,8 +220,8 @@ def plotting_demo():
     plt.title("Combined input image with one_hot")
 
     # Then just the AB channels
-    A = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
-    B = unique_colors[np.argmax(onehot_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
+    A = unique_colors[np.argmax(get_soft_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 0].T
+    B = unique_colors[np.argmax(get_soft_enconding_ab(np.array(([A, B])).T, unique_colors), axis=2)][:, :, 1].T
     img_combined = combine_lab_no_l_channel(A, B)
     picture = get_rgb_from_lab(img_combined)
     ax1 = f.add_subplot(133)
@@ -229,7 +229,7 @@ def plotting_demo():
     plt.title("Input image with one_hot")
     plt.show()
 
-    img_AB = onehot_enconding_ab(np.array(([A, B])).T, unique_colors)
+    img_AB = get_soft_enconding_ab(np.array(([A, B])).T, unique_colors)
     plot_gamut_from_bins(img_AB, unique_colors)
 
     # plot uniques

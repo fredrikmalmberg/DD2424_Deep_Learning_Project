@@ -1,0 +1,45 @@
+import os
+
+import numpy as np
+from tqdm import tqdm
+
+import data_manager
+import plotting
+
+
+def create_rebalance_file():
+    """
+    Cretes a new file that stores the weights of the bins
+    :return: 313x1 numpy array
+    """
+
+    folder_path = "dataset/dogs/train/"
+    unique_colors = np.load('dataset/data/color_space.npy')
+    folders = os.listdir(folder_path)
+    bins = np.zeros((unique_colors.shape[0]))
+    for subfolder in tqdm(folders):
+        entry = os.listdir(folder_path + subfolder)
+        for image in entry:
+            image_path = f'{folder_path}{subfolder}/{image}'
+            rgb_image = plotting.get_rgb_from_path(image_path)
+            L, A, B = plotting.get_lab_channels_from_rgb(rgb_image)
+            bins_image = data_manager.get_onehot_encoding(np.array(([A, B])).T, unique_colors)
+            bins += np.sum(np.sum(bins_image, axis=0), axis=0)
+
+    bins = bins / np.sum(bins)
+    lamb = 0.5
+    q = 313
+    w = (1 - lamb) * bins + lamb / q
+    w = np.power(w, -1)
+    w = w / np.sum(np.multiply(bins, w))
+    np.save("trained_models/weight_prior_dog.npy", w)
+
+
+def get_class_rebalance():
+    """
+    Returns the class rebalance file
+    :return: class_rebalance in numpy format
+    """
+    if not os.path.isfile("dataset/data/class_rebalance.npy"):
+        raise FileNotFoundError("No class rebalance file found, locate it or create a new one")
+    return np.load('dataset/data/class_rebalance.npy')

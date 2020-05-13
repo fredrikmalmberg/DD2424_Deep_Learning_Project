@@ -3,14 +3,14 @@ import numpy as np
 import dataobjects
 from Network_Layers import train_network
 import data_manager
-
 warnings.filterwarnings('ignore', category=FutureWarning)
-
+import class_rebalance
 
 def main():
+    # class_rebalance.create_rebalance_file()
     # train = data_manager.import_data('train', 10)  # this is just for plotting
 
-    priors = np.load('trained_models/prior_probs.npy')
+    priors = np.load('trained_models/weight_prior_dog.npy')
     lamb = 0.5
     q = 313
     w = (1 - lamb) * priors + lamb / q
