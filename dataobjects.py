@@ -20,9 +20,9 @@ class settings:
         self.plot_random_imgs_from_generator = False
         self.plot_every_n_batch = 5
         self.nr_epochs = 20
-        self.training_steps_per_epoch = 200
+        self.training_steps_per_epoch = 2000
         self.validation_steps_per_epoch = 4
-        self.batch_size = 20  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+        self.batch_size = 2  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
         self.learning_rate = 3e-5  # Learning rate of the training
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to

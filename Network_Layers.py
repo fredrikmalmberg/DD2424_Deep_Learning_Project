@@ -8,7 +8,8 @@ from keras import models, layers, optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import rgb2lab
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
-from pre_process_crop import load_and_crop_img
+#from pre_process_crop import load_and_crop_img
+from crop_image import crop_img_patch
 from keras.applications.inception_v3 import preprocess_input
 from plotting import combine_lab, epoch_plot
 import keras_preprocessing.image
@@ -37,7 +38,7 @@ def create_generator(settings, data_set):
     :param data_set: The chossen data set to generate from (options train, validation, test)
     :return: A generator that generates data from the data_set
     """
-    keras_preprocessing.image.iterator.load_img = load_and_crop_img
+    keras_preprocessing.image.iterator.load_img = crop_img_patch
     if not (data_set == "train" or data_set == "validation" or data_set == "test"):
         raise NotImplementedError("Input data_set does not match allowed options (train, validation, test)")
 
@@ -46,7 +47,7 @@ def create_generator(settings, data_set):
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None,
-                                                         interpolation = 'lanczos:random',)
+                                                         interpolation = 'lanczos',)
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -92,17 +93,28 @@ def pre_process(images, settings, unique_colors):
         inputs[batch] = images_lab[:, :, :1] -50
 
     if (np.random.uniform() < 0.1) & settings.plot_random_imgs_from_generator:
-        L = images_lab[:, :, :1] -50
+        L = images_lab[:, :, :1]
         print(np.min(L))
-        L = cv2.resize(L, (settings.output_shape[0], settings.output_shape[1]))
+        L_sized = cv2.resize(L, (settings.output_shape[0], settings.output_shape[1]))
+        print(L_sized.shape)
         A = unique_colors[np.argmax(targets[-1], axis=2)][:, :, 0]
         B = unique_colors[np.argmax(targets[-1], axis=2)][:, :, 1]
-        lab_image = combine_lab(L, A, B)
+        lab_image = combine_lab(L_sized, A, B)
         rgb_image = lab2rgb(lab_image)
         f = plt.figure(figsize=(10, 20))
         ax1 = f.add_subplot(121)
         imgplot = plt.imshow(rgb_image)
-        plt.title("Recombined Input")
+        plt.title("L Input and target A B")
+        ax1 = f.add_subplot(122)
+        print(L.shape)
+        L = cv2.resize(L, (settings.input_shape[0], settings.input_shape[1]))
+        print(L.shape)
+        A = np.zeros(L.shape)
+        B = np.zeros(L.shape)
+        lab_image = combine_lab(L, A, B)
+        rgb_image = lab2rgb(lab_image)
+        imgplot = plt.imshow(rgb_image)
+        plt.title("L Input")
         plt.show()
     return inputs, targets
 
@@ -134,7 +146,7 @@ def train_network(settings, class_weight=None):
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train/n01440764/n01440764_141.JPEG')
+    print_stuff = epoch_plot(settings, model, class_weight, 'dataset/data/train_temp/n01440764/n01440764_141.JPEG')
     reduced_learning_rate = ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                               patience=settings.patience, min_lr=settings.min_learning_rate, verbose=1)
     if settings.plot_during_training:
@@ -169,7 +181,7 @@ def get_callback_functions(settings, model, class_weight, use_checkpoint=True, u
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
     if use_plotting:
         callbacks_list.append(
-            epoch_plot(settings, model, class_weight, 'dataset/data/train/n01440764/n01440764_141.JPEG'))
+            epoch_plot(settings, model, class_weight, 'dataset/data/train_temp/n01440764/n01440764_141.JPEG'))
     if use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
