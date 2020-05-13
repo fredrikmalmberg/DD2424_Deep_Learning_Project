@@ -2,7 +2,7 @@ import keras
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
-from skimage.color import lab2rgb, rgb2lab
+from skimage.color import lab2rgb, rgb2lab, grey2rgb
 from skimage import io
 
 from model import create_model
@@ -68,10 +68,15 @@ def plot_prediction(settings, model, w, image_path):
     # Some magic to match dimensions since we are losing a few pixels in the forward pass
     diff1 = A.shape[0] - L.shape[0]
     diff2 = A.shape[1] - L.shape[1]
+
     crop1 = int(diff1 // 2)
     crop2 = -int(diff1 - diff1 // 2)
+    if crop2 == 0:
+        crop2 = A.shape[0]+1
     crop3 = int(diff2 // 2)
     crop4 = -int(diff2 - diff2 // 2)
+    if crop4 == 0:
+        crop4 = A.shape[1]+1
 
     # Cropping (and clipping is probably not needed if color space is correct)
     A = np.clip(A[crop1:crop2, crop3:crop4], a_min=-110, a_max=110)
@@ -163,7 +168,8 @@ def combine_lab_no_l_channel(A,B):
     return img_combined
 
 def get_rgb_from_path(path):
-    return io.imread(path)
+    img = io.imread(path)
+    return img
 
 def get_rgb_from_lab(lab_image):
     return lab2rgb(lab_image)
