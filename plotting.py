@@ -240,3 +240,18 @@ def plotting_demo():
 
     # plot uniques
     plot_unique_colours_gamut(unique_colors)
+    
+def plot_epoch_metrics():
+    metric_data = np.genfromtxt('log.csv', delimiter=';')
+    plt.figure(figsize=(12, 3))
+    plt.subplot(121)
+    plt.plot(metric_data[:,0], metric_data[:,1],label ='Training Accuracy')
+    plt.plot(metric_data[:,0], metric_data[:,3],label ='Validation Accuracy')
+    plt.title('Accuracy')
+    plt.legend()
+    plt.subplot(122)
+    plt.plot(metric_data[:,0], metric_data[:,2],label ='Training Loss')
+    plt.plot(metric_data[:,0], metric_data[:,4],label ='Validation Loss')
+    plt.title('Loss')
+    plt.legend()
+    plt.show()

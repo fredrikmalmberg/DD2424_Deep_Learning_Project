@@ -16,6 +16,7 @@ import keras_preprocessing.image
 from model import create_model
 import os
 from skimage.color import lab2rgb
+from keras.callbacks import History, CSVLogger
 
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -158,12 +159,13 @@ def train_network(settings, class_weight=None):
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch,
               callbacks=callbacks_list)
+    
     execution_time = datetime.now() - start_time
     print("Training done. Execution time for the training was: ", execution_time)
     return model
 
 
-def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True):
+def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True, use_loss_plotting=True):
     """
     Returns callback functions used when training
     :param use_reducing_lr: bool toggle for reducing learning rate
@@ -181,11 +183,16 @@ def get_callback_functions(settings, model, class_weight, use_checkpoint=True, u
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
     if use_plotting:
         callbacks_list.append(
-            epoch_plot(settings, model, class_weight, 'dataset/data/train_temp/n01440764/n01440764_141.JPEG'))
+            epoch_plot(settings, model, class_weight, 'dataset/data/train/n01491361/n01491361_210.JPEG'))
     if use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
+    if use_loss_plotting:
+        loss_logger = CSVLogger('log.csv', append=True, separator=';')
+        history = History()
+        callbacks_list.append(loss_logger)
+                              
     return callbacks_list
 
 
