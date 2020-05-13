@@ -27,12 +27,7 @@ def create_rebalance_file():
             bins += np.sum(np.sum(bins_image, axis=0), axis=0)
 
     bins = bins / np.sum(bins)
-    lamb = 0.5
-    q = 313
-    w = (1 - lamb) * bins + lamb / q
-    w = np.power(w, -1)
-    w = w / np.sum(np.multiply(bins, w))
-    np.save("trained_models/weight_prior_dog.npy", w)
+    np.save("trained_models/prior_dog.npy", bins)
 
 
 def get_class_rebalance():
