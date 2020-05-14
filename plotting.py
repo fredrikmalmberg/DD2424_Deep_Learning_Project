@@ -9,6 +9,7 @@ from model import create_model
 from data_manager import onehot_enconding_ab
 import data_manager as data_manager
 import frechet_inception_difference as fid
+from dataobjects import settings
 
 
 def colorize_benchmark_images(model, show_fid=True):
@@ -35,7 +36,8 @@ class epoch_plot(keras.callbacks.Callback):
         if batch % self.settings.training_steps_per_epoch == 0:
             plot_prediction(self.settings, self.model, self.w, self.img)
 
-def plot_prediction(settings, model, w, image_path):
+
+def plot_prediction(settings, model, w, image_path, T = 0.0):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
@@ -62,10 +64,35 @@ def plot_prediction(settings, model, w, image_path):
     img_predict = out[0, :, :, :]
 
     # Picking out the A and B values from the predicted bins
-    A = cs[np.argmax(img_predict, axis=2)][:, :, 0]
-    B = cs[np.argmax(img_predict, axis=2)][:, :, 1]
+    # If temperature is 0 we take mode otherwise annealed mean
+    if T == 0.:
+        A = cs[np.argmax(img_predict, axis=-1)][:, :, 0]
+        B = cs[np.argmax(img_predict, axis=-1)][:, :, 1]
+    else:
+        # ugly debug stuff
+        # z = img_predict[10, 10]
+        # plt.plot(cs[:, 0], img_predict[10, 10])
+        # plt.show()
+        # z_temp = np.exp(np.log(z + epsilon) / T) / (np.sum(np.exp(np.log(z + epsilon) / T)) + epsilon)
+        # plt.plot(cs[:, 0], z_temp)
+        # plt.show()
+        # print("predicted mode for A for pixel ", cs[np.argmax(z, axis=-1)][0])
+        # print("predicted mean for A for pixel", np.sum(np.multiply(z, cs[:, 0])))
+        # print("predicted annealed mean for A for pixel", np.sum(np.multiply(z_temp, cs[:, 0])))
+
+        import sys
+        epsilon = sys.float_info.epsilon
+        A = np.zeros(img_predict[:,:,0].shape)
+        B = np.zeros(img_predict[:,:,0].shape)
+        for h in range(img_predict.shape[0]):
+            for w in range(img_predict.shape[1]):
+                z = img_predict[h,w]
+                z_temp = np.exp(np.log(z + epsilon) / T) / (np.sum(np.exp(np.log(z + epsilon) / T)) + epsilon)
+                A[h,w] = np.sum(np.multiply(z_temp, cs[:,0]))
+                B[h,w] = np.sum(np.multiply(z_temp, cs[:,1]))
 
     # Some magic to match dimensions since we are losing a few pixels in the forward pass
+    # When john fixes the model, we wont be needing it anymore :D
     diff1 = A.shape[0] - L.shape[0]
     diff2 = A.shape[1] - L.shape[1]
 

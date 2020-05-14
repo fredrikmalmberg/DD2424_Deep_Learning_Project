@@ -9,6 +9,8 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from keras.models import load_model as model_loader
 from get_color_scale import generate_unique_color_space
+from model import create_model
+from dataobjects import settings
 
 
 def assert_data_is_setup(settings):
@@ -87,7 +89,7 @@ def save_model(model, name=None):
     return name
 
 
-def load_model(path_and_name):
+def load_model_old(path_and_name):
     """
     Loads a model from disk with the given param name.
     :param path_and_name: The path and the name to the model to be loaded
@@ -97,6 +99,10 @@ def load_model(path_and_name):
     print("Loaded model: {model_name} from disk successfully".format(model_name=path_and_name))
     return model
 
+def load_model(name, settings, w):
+    model = create_model(settings, w)
+    model.load_weights(name)
+    return model
 
 def save_lab_figures(dataset):
     """
