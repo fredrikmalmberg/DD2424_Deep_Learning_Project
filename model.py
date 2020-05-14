@@ -74,7 +74,7 @@ def create_model(settings, class_weights, training=True):
         model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                                 padding='same', kernel_regularizer=regulizer, name='conv8_3'))
         model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', kernel_initializer=initializer,
-                                strides=(1, 1), padding='same', dilation_rate=1, name='pred',))
+                                strides=(1, 1), padding='same', dilation_rate=1, name='pred'))
 
     if not training:  # this is run when we are predicting
         model.add(layers.UpSampling2D((4, 4), interpolation='bilinear', name='upsample_2_predict'))

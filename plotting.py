@@ -1,16 +1,14 @@
 import os
+
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import ndimage
-from skimage.color import lab2rgb, rgb2lab, grey2rgb
 from skimage import io
+from skimage.color import lab2rgb, rgb2lab
 from tqdm import tqdm
 
-from model import create_model
 from data_manager import get_soft_enconding_ab
-import data_manager as data_manager
-import frechet_inception_difference as fid
+from model import create_model
 
 
 # def colorize_benchmark_images(model, show_fid=True):
@@ -37,20 +35,21 @@ class epoch_plot(keras.callbacks.Callback):
         if batch % self.settings.training_steps_per_epoch == 0:
             plot_prediction(self.settings, self.model, self.w, self.img)
 
+
 def plot_prediction(settings, model, w, image_path):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
 
     # And the image
-    rgb_image  = get_rgb_from_path(image_path)
+    rgb_image = get_rgb_from_path(image_path)
 
     # Getting LAB channels from rgb image
     L, A, B = get_lab_channels_from_rgb(rgb_image)
 
     # Reshaping input to fit model
-    input_to_model = np.empty((1,L.shape[0], L.shape[1], 1))
-    input_to_model[0, :, :, 0] = L - 50 # We train with shifted L so lets use it here as well
+    input_to_model = np.empty((1, L.shape[0], L.shape[1], 1))
+    input_to_model[0, :, :, 0] = L - 50  # We train with shifted L so lets use it here as well
 
     # Creating a new model, setting weights and predicting
     predictModel = create_model(settings, w, training=False)
@@ -74,11 +73,11 @@ def plot_prediction(settings, model, w, image_path):
     crop1 = int(diff1 // 2)
     crop2 = -int(diff1 - diff1 // 2)
     if crop2 == 0:
-        crop2 = A.shape[0]+1
+        crop2 = A.shape[0] + 1
     crop3 = int(diff2 // 2)
     crop4 = -int(diff2 - diff2 // 2)
     if crop4 == 0:
-        crop4 = A.shape[1]+1
+        crop4 = A.shape[1] + 1
 
     # Cropping (and clipping is probably not needed if color space is correct)
     A = np.clip(A[crop1:crop2, crop3:crop4], a_min=-110, a_max=110)
@@ -106,7 +105,6 @@ def plot_prediction(settings, model, w, image_path):
     imgplot = plt.imshow(rgb_image)
     plt.title("Original Image")
 
-
     plt.show()
     print("Predicted values for L, A & B: ")
     print("L: {} to {}.".format(np.min(L), np.max(L)))
@@ -114,6 +112,7 @@ def plot_prediction(settings, model, w, image_path):
     print("B: {} to {}.".format(np.min(B), np.max(B)))
 
     return
+
 
 def plot_unique_colours_gamut(unique_colors):
     # Plots the gamut that we are using ie the color of the bins
@@ -131,13 +130,14 @@ def plot_unique_colours_gamut(unique_colors):
             else:
                 L[11 + int(i / 10), int(11 + j / 10)] = 0
 
-    img_combined = combine_lab(L,A,B)
+    img_combined = combine_lab(L, A, B)
     picture = lab2rgb(img_combined)
     _ = plt.imshow(picture)
     plt.yticks(range(22), range(110, -110, -10))
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Gamut for unique colours")
     plt.show()
+
 
 def plot_weights_gamut(unique_colors, priors):
     # Plots the gamut that we are using ie the color of the bins
@@ -157,7 +157,8 @@ def plot_weights_gamut(unique_colors, priors):
     plt.title("Original Gamut")
     plt.show()
 
-def combine_lab(L,A,B):
+
+def combine_lab(L, A, B):
     # Combines LAB to image
     img_combined = np.zeros(([A.shape[0], A.shape[1], 3]))
     img_combined[:, :, 0] = L
@@ -165,21 +166,25 @@ def combine_lab(L,A,B):
     img_combined[:, :, 2] = B
     return img_combined
 
-def combine_lab_no_l_channel(A,B):
+
+def combine_lab_no_l_channel(A, B):
     # Combines A and B with a solid L to showcase colors only
     img_combined = np.zeros(([A.shape[0], A.shape[1], 3]))
-    L = np.ones(A.shape)*50
+    L = np.ones(A.shape) * 50
     img_combined[:, :, 0] = L
     img_combined[:, :, 1] = A
     img_combined[:, :, 2] = B
     return img_combined
 
+
 def get_rgb_from_path(path):
     img = io.imread(path)
     return img
 
+
 def get_rgb_from_lab(lab_image):
     return lab2rgb(lab_image)
+
 
 def get_lab_channels_from_rgb(rgb_image):
     # Returns the LAB channels from RGB image
@@ -188,6 +193,7 @@ def get_lab_channels_from_rgb(rgb_image):
     A = images_lab[:, :, 1]
     B = images_lab[:, :, 2]
     return L, A, B
+
 
 def plot_gamut_from_bins(img_AB, unique_colors):
     # Plots the gamut of an image
@@ -206,6 +212,7 @@ def plot_gamut_from_bins(img_AB, unique_colors):
     plt.xticks(range(22), range(-110, 110, 10))
     plt.title("Original Gamut")
     plt.show()
+
 
 def plotting_demo():
     # This is just to show the different plotting functions
@@ -260,13 +267,13 @@ def plot_epoch_metrics():
     metric_data = np.genfromtxt('log.csv', delimiter=';')
     plt.figure(figsize=(12, 3))
     plt.subplot(121)
-    plt.plot(metric_data[:,0], metric_data[:,1],label ='Training Accuracy')
-    plt.plot(metric_data[:,0], metric_data[:,3],label ='Validation Accuracy')
+    plt.plot(metric_data[:, 0], metric_data[:, 1], label='Training Accuracy')
+    plt.plot(metric_data[:, 0], metric_data[:, 3], label='Validation Accuracy')
     plt.title('Accuracy')
     plt.legend()
     plt.subplot(122)
-    plt.plot(metric_data[:,0], metric_data[:,2],label ='Training Loss')
-    plt.plot(metric_data[:,0], metric_data[:,4],label ='Validation Loss')
+    plt.plot(metric_data[:, 0], metric_data[:, 2], label='Training Loss')
+    plt.plot(metric_data[:, 0], metric_data[:, 4], label='Validation Loss')
     plt.title('Loss')
     plt.legend()
     plt.show()

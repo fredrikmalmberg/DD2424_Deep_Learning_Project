@@ -3,12 +3,14 @@ import re
 from datetime import datetime
 
 import cv2
+import keras.models
 import numpy as np
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
+
 from get_color_scale import generate_unique_color_space
-import keras.models
+
 
 def assert_data_is_setup(settings):
     # Checks that we have training, validation and test folders. We assume if the folders exists that there is files
@@ -54,7 +56,6 @@ def get_onehot_encoding(target, uniques):
     y[index, indices] = 1
     y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
     return y
-
 
 
 def gaussian_kernel(distance, sigma):
@@ -155,12 +156,3 @@ def import_data(dataset, batch_size):
     data['target'] = target
 
     return data
-
-def get_benchmark_images():
-    return import_data("benchmark_images", 4)
-
-def print_picture(picture):
-    cv2.imshow('image', picture)
-    # not sure why but it need this 2 following rows to work
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()

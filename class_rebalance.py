@@ -30,11 +30,10 @@ def create_rebalance_file():
     np.save("trained_models/prior_dog.npy", bins)
 
 
-def get_class_rebalance():
-    """
-    Returns the class rebalance file
-    :return: class_rebalance in numpy format
-    """
-    if not os.path.isfile("dataset/data/class_rebalance.npy"):
-        raise FileNotFoundError("No class rebalance file found, locate it or create a new one")
-    return np.load('dataset/data/class_rebalance.npy')
+def get_re_weights(priors, lamb):
+    q = priors.shape[0]
+    w = (1 - lamb) * priors + lamb / q
+    w = np.power(w, -1)
+    w = w / np.sum(np.multiply(priors, w))
+    w = w.astype(np.float32)
+    return w

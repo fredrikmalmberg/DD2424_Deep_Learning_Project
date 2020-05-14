@@ -1,21 +1,20 @@
+import os
 from datetime import datetime
-import matplotlib.pyplot as plt
+
 import cv2
+import keras_preprocessing.image
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from keras.preprocessing.image import ImageDataGenerator
-from skimage.color import rgb2lab
+from keras.callbacks import CSVLogger
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
-#from pre_process_crop import load_and_crop_img
-from crop_image import crop_img_patch
-from keras.applications.inception_v3 import preprocess_input
-from plotting import combine_lab, epoch_plot
-import keras_preprocessing.image
-from model import create_model
+from keras.preprocessing.image import ImageDataGenerator
 from skimage.color import lab2rgb
-import data_manager
-from keras.callbacks import History, CSVLogger
+from skimage.color import rgb2lab
 
+from crop_image import crop_img_patch
+from model import create_model
+from plotting import combine_lab, epoch_plot
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -23,7 +22,6 @@ if gpus:
         # This line allows the network to use the GPU VRAM uncapped. !!! NEED THIS LINE FOR NETWORK TO RUN !!!
         for idx, g in enumerate(gpus):
             tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[idx], True)
-        # tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[1], True)
         # tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     except RuntimeError as e:
         print(e)
@@ -47,7 +45,7 @@ def create_generator(settings, data_set):
     generator = ImageDataGenerator().flow_from_directory(directory=settings.data_directory + data_set,
                                                          target_size=target_size,
                                                          batch_size=settings.batch_size, class_mode=None,
-                                                         interpolation = 'lanczos',)
+                                                         interpolation='lanczos', )
     return generator_wrapper(generator, settings, unique_colors)
 
 
@@ -81,17 +79,9 @@ def pre_process(images, settings, unique_colors):
         images_lab = rgb2lab(images[batch])  # Convert from rgb -> lab format
         target_batch = cv2.resize(images_lab[:, :, 1:], (settings.output_shape[0], settings.output_shape[1]))
         targets[batch] = get_soft_enconding_ab(target_batch, unique_colors)
-
-        # TODO: RE WEIGHT HERE
-        # if settings.use_reweighting:
-        #     lamda = 0.5
-        #     q = targets[batch].shape[2]
-        #     reweighted = (1 - lamda) * targets[batch] + lamda / q
-        #
-        #     targets[batch] = np.power(reweighted, -1)
-
         inputs[batch] = images_lab[:, :, :1] - 50
 
+    # Used for debugging
     if (np.random.uniform() < 0.1) & settings.plot_random_imgs_from_generator:
         L = images_lab[:, :, :1]
         print(np.min(L))
@@ -129,7 +119,6 @@ def load_checkpoint(model):
     files = os.listdir(path)
     paths = [os.path.join(path, basename) for basename in files]
     checkpoint = max(paths, key=os.path.getctime)
-
     return checkpoint
 
 
@@ -145,7 +134,7 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=False)
+    callbacks_list = get_callback_functions(settings, model, class_weight)
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
@@ -156,34 +145,29 @@ def train_network(settings, class_weight=None):
     return model
 
 
-def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True,
-                           use_loss_plotting=True):
+def get_callback_functions(settings, model, class_weight):
     """
     Returns callback functions used when training
-    :param use_loss_plotting: Plots the loss and accuracy of the data during training
-    :param use_reducing_lr: bool toggle for reducing learning rate
-    :param use_plotting: bool toggle for plotting predicting (colorize) a picture after each epoch
-    :param use_checkpoint: bool toggle for saving the best found model according to the validation set during training
     :param settings: Settings object with chosen parameters
     :param model: The model to be trained
     :param class_weight:
     :return: List of callback functions used when training
     """
     callbacks_list = []
-    if use_checkpoint:
+    if settings.use_checkpoint:  # bool toggle for saving the best found model according to the validation set during training
         time_started = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        callbacks_list.append(ModelCheckpoint('checkpoints/'+time_started,
+        callbacks_list.append(ModelCheckpoint('checkpoints/' + time_started,
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
-    if use_plotting:
+    if settings.use_plotting:  # bool toggle for plotting predicting (colorize) a picture after each epoch
         callbacks_list.append(
-            epoch_plot(settings, model, class_weight, 'dataset/dogs/validation/n02085620-Chihuahua/n02085620_199.jpg'))
-    if use_reducing_lr:
+            epoch_plot(settings, model, class_weight,
+                       'dataset/dogs/validation/n02085620-Chihuahua/n02085620_199.jpg'))  # Todo make this dynamic
+    if settings.use_reducing_lr:  # bool toggle for reducing learning rate
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
-    if use_loss_plotting:
+    if settings.use_loss_plotting:  # Plots the loss and accuracy of the data during training
         loss_logger = CSVLogger('log.csv', append=True, separator=';')
-        history = History()
         callbacks_list.append(loss_logger)
 
     return callbacks_list
