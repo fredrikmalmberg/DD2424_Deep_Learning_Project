@@ -16,13 +16,13 @@ class settings:
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
-        self.plot_during_training = True
+        self.plot_during_training = False
         self.plot_random_imgs_from_generator = False
         self.plot_every_n_batch = 5
-        self.nr_epochs = 100
+        self.nr_epochs = 60
         self.training_steps_per_epoch = 1764     # Nr dogs training images after split = 12348/7 = 1764
         self.validation_steps_per_epoch = 882     # Nr dogs validation images after split = 6174/7 = 882
-        self.batch_size = 8  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
+        self.batch_size = 7  # Currently we can only run batch_size of 2 without getting out of memory error !!! This is with 8 GB VRAM !!!
         self.loss_function = "categorical_crossentropy"  # Which loss function to use
         self.learning_rate = 3e-5  # Learning rate of the training
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to

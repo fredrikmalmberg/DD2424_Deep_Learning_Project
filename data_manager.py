@@ -7,9 +7,8 @@ import numpy as np
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
-from keras.models import load_model as model_loader
 from get_color_scale import generate_unique_color_space
-
+import keras.models
 
 def assert_data_is_setup(settings):
     # Checks that we have training, validation and test folders. We assume if the folders exists that there is files
@@ -94,7 +93,10 @@ def load_model(path_and_name):
     :param path_and_name: The path and the name to the model to be loaded
     :return: A model
     """
-    model = model_loader(path_and_name)
+    # from model import create_model.lo
+
+    # model = keras.models.load_model(path_and_name, custom_objects={'loss_function': loss_function})
+    model = keras.models.load_model(path_and_name, compile=False)
     print("Loaded model: {model_name} from disk successfully".format(model_name=path_and_name))
     return model
 

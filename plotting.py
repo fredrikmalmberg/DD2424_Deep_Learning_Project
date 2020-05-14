@@ -1,9 +1,12 @@
+import os
+
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 from skimage.color import lab2rgb, rgb2lab, grey2rgb
 from skimage import io
+from tqdm import tqdm
 
 from model import create_model
 from data_manager import get_soft_enconding_ab
@@ -87,18 +90,23 @@ def plot_prediction(settings, model, w, image_path):
 
     # Back to rgb for plotting
     predicted_rgb_image = lab2rgb(lab_image)
-    f = plt.figure(figsize=(10, 20))
-    ax1 = f.add_subplot(121)
+    f = plt.figure(figsize=(10, 10))
+    ax1 = f.add_subplot(131)
     imgplot = plt.imshow(predicted_rgb_image)
     plt.title("Combined prediction")
-
 
     # Just AB plotting
     lab_image = combine_lab_no_l_channel(A, B)
     predicted_rgb_image = lab2rgb(lab_image)
-    ax1 = f.add_subplot(122)
+    ax1 = f.add_subplot(132)
     imgplot = plt.imshow(predicted_rgb_image)
     plt.title("A B prediction")
+
+    # Original AB
+    ax1 = f.add_subplot(133)
+    imgplot = plt.imshow(rgb_image)
+    plt.title("Original Image")
+
 
     plt.show()
     print("Predicted values for L, A & B: ")
@@ -240,3 +248,10 @@ def plotting_demo():
 
     # plot uniques
     plot_unique_colours_gamut(unique_colors)
+
+
+def colorize_images_in_folder(settings, model, w, folder_path):
+    images = os.listdir(folder_path)
+    for image in tqdm(images):
+        file_path = folder_path + image
+        plot_prediction(settings, model, w, file_path)
