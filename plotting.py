@@ -4,9 +4,8 @@ import keras
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage import io
-
+from skimage.color import lab2rgb, rgb2lab
 from model import create_model
-from data_manager import onehot_enconding_ab
 import data_manager as data_manager
 import frechet_inception_difference as fid
 from dataobjects import settings
@@ -37,7 +36,7 @@ class epoch_plot(keras.callbacks.Callback):
             plot_prediction(self.settings, self.model, self.w, self.img)
 
 
-def plot_prediction(settings, model, w, image_path,savefig=False, T = 0.0):
+def plot_prediction(settings, model, w, image_path, savefig=False, T = 0.0):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
@@ -147,6 +146,8 @@ def plot_prediction(settings, model, w, image_path,savefig=False, T = 0.0):
         plt.savefig(str(fig_name) + '_pred_color.png')
         pred_img = plt.imshow(predicted_rgb_image)
         plt.savefig(str(fig_name) + '_pred.png')
+
+    plt.show()
     return
 
 

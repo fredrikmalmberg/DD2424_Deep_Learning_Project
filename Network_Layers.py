@@ -151,10 +151,7 @@ def train_pretrained_model(model,settings, w):
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True,
                                  mode='max')
     class_weight = w
-    if settings.plot_during_training:
-        callbacks_list = get_callback_functions(settings, model, class_weight, use_reducing_lr=False)
-    else:
-        callbacks_list = [checkpoint]
+    callbacks_list = get_callback_functions(settings, model, class_weight)
     print("Starting to train the pretrained network")
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, class_weight=w, validation_steps=settings.validation_steps_per_epoch,
