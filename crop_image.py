@@ -26,7 +26,6 @@ def crop_img_patch(path, grayscale=False, color_mode='rgb', target_size=None,
         ratio = np.max([(target_w)/input_w, (target_h)/input_h])
         ratios = int(input_w * ratio), int(input_h * ratio)
         img = img.resize(ratios, resample=resample)
-        # print("Changing ratio: ", ratios)
         input_w, input_h = img.size
 
     shift_x = 0

@@ -3,11 +3,12 @@ import re
 from datetime import datetime
 
 import cv2
+import keras.models
 import numpy as np
 from skimage.color import rgb2lab
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
-from keras.models import load_model as model_loader
+
 from get_color_scale import generate_unique_color_space
 
 
@@ -30,29 +31,29 @@ def assert_data_is_setup(settings):
     print("The data is setup correctly")
 
 
-def onehot_enconding_ab(target, uniques):
+def get_soft_enconding_ab(target, uniques):
     a = np.ravel(target[:, :, 0])
     b = np.ravel(target[:, :, 1])
-    if uniques is None:
-        print("No hot encoding space file found, creating a new one based on the input data...")
-        bins = np.arange(-110, 110, 10)
-        bin_a = np.copy(a)
-        bin_b = np.copy(b)
-        for i in range(len(bins) - 1):
-            bin_a = np.where((a < bins[i + 1]) & (a >= bins[i]), bins[i], bin_a)
-            bin_b = np.where((b < bins[i + 1]) & (b >= bins[i]), bins[i], bin_b)
-        uniques = np.unique(
-            np.sort(np.array(list(set(tuple(sorted([m, n])) for m, n in zip(bin_a, bin_b)))), axis=0), axis=0)
-        np.save('dataset/data/color_space.npy', uniques)
-        print('\nCreated  new unique values file from the loaded targets')
     ab = np.vstack((a, b)).T
     nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(uniques)
     distances, indices = nbrs.kneighbors(ab)
-
+    z = gaussian_kernel(distances, sigma=5)
     y = np.zeros((ab.shape[0], uniques.shape[0]))
     index = np.arange(ab.shape[0]).reshape(-1, 1)
-    z = gaussian_kernel(distances, sigma=5)
     y[index, indices] = z
+    y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
+    return y
+
+
+def get_onehot_encoding(target, uniques):
+    a = np.ravel(target[:, :, 0])
+    b = np.ravel(target[:, :, 1])
+    ab = np.vstack((a, b)).T
+    nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(uniques)
+    distances, indices = nbrs.kneighbors(ab)
+    y = np.zeros((ab.shape[0], uniques.shape[0]))
+    index = np.arange(ab.shape[0]).reshape(-1, 1)
+    y[index, indices] = 1
     y = y.reshape(target.shape[0], target.shape[1], uniques.shape[0])
     return y
 
@@ -93,7 +94,10 @@ def load_model(path_and_name):
     :param path_and_name: The path and the name to the model to be loaded
     :return: A model
     """
-    model = model_loader(path_and_name)
+    # from model import create_model.lo
+
+    # model = keras.models.load_model(path_and_name, custom_objects={'loss_function': loss_function})
+    model = keras.models.load_model(path_and_name, compile=False)
     print("Loaded model: {model_name} from disk successfully".format(model_name=path_and_name))
     return model
 
@@ -146,18 +150,9 @@ def import_data(dataset, batch_size):
                 picture = np.load('dataset/data_lab/{}/{}'.format(dataset, image))
                 input[batch] = picture[:, :, :1]
                 tmp = cv2.resize(picture[:, :, 1:], (64, 64))
-                target[batch] = onehot_enconding_ab(tmp, uniques)
+                target[batch] = get_soft_enconding_ab(tmp, uniques)
                 batch += 1
     data['input'] = input
     data['target'] = target
 
     return data
-
-def get_benchmark_images():
-    return import_data("benchmark_images", 4)
-
-def print_picture(picture):
-    cv2.imshow('image', picture)
-    # not sure why but it need this 2 following rows to work
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
