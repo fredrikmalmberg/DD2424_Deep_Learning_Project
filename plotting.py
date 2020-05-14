@@ -1,5 +1,4 @@
 import os
-
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,7 +101,7 @@ def plot_prediction(settings, model, w, image_path):
     imgplot = plt.imshow(predicted_rgb_image)
     plt.title("A B prediction")
 
-    # Original AB
+    # Ground truth RGB
     ax1 = f.add_subplot(133)
     imgplot = plt.imshow(rgb_image)
     plt.title("Original Image")
@@ -255,3 +254,19 @@ def colorize_images_in_folder(settings, model, w, folder_path):
     for image in tqdm(images):
         file_path = folder_path + image
         plot_prediction(settings, model, w, file_path)
+
+
+def plot_epoch_metrics():
+    metric_data = np.genfromtxt('log.csv', delimiter=';')
+    plt.figure(figsize=(12, 3))
+    plt.subplot(121)
+    plt.plot(metric_data[:,0], metric_data[:,1],label ='Training Accuracy')
+    plt.plot(metric_data[:,0], metric_data[:,3],label ='Validation Accuracy')
+    plt.title('Accuracy')
+    plt.legend()
+    plt.subplot(122)
+    plt.plot(metric_data[:,0], metric_data[:,2],label ='Training Loss')
+    plt.plot(metric_data[:,0], metric_data[:,4],label ='Validation Loss')
+    plt.title('Loss')
+    plt.legend()
+    plt.show()

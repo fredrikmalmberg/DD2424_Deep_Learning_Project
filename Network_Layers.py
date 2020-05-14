@@ -14,6 +14,8 @@ import keras_preprocessing.image
 from model import create_model
 from skimage.color import lab2rgb
 import data_manager
+from keras.callbacks import History, CSVLogger
+
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -117,6 +119,20 @@ def pre_process(images, settings, unique_colors):
     return inputs, targets
 
 
+def load_checkpoint(model):
+    """
+    Load the best checkpoint from the most recent training
+    :param: model
+    :return: weight file from checkpoint
+    """
+    path = 'checkpoints/'
+    files = os.listdir(path)
+    paths = [os.path.join(path, basename) for basename in files]
+    checkpoint = max(paths, key=os.path.getctime)
+
+    return checkpoint
+
+
 def train_network(settings, class_weight=None):
     """
     Trains the network with settings given by the settings object and found classes in unique_colors
@@ -129,7 +145,7 @@ def train_network(settings, class_weight=None):
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     settings.print_training_settings()
-    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=True)
+    callbacks_list = get_callback_functions(settings, model, class_weight, use_plotting=False)
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
@@ -140,9 +156,11 @@ def train_network(settings, class_weight=None):
     return model
 
 
-def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True):
+def get_callback_functions(settings, model, class_weight, use_checkpoint=True, use_plotting=True, use_reducing_lr=True,
+                           use_loss_plotting=True):
     """
     Returns callback functions used when training
+    :param use_loss_plotting: Plots the loss and accuracy of the data during training
     :param use_reducing_lr: bool toggle for reducing learning rate
     :param use_plotting: bool toggle for plotting predicting (colorize) a picture after each epoch
     :param use_checkpoint: bool toggle for saving the best found model according to the validation set during training
@@ -163,6 +181,11 @@ def get_callback_functions(settings, model, class_weight, use_checkpoint=True, u
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
+    if use_loss_plotting:
+        loss_logger = CSVLogger('log.csv', append=True, separator=';')
+        history = History()
+        callbacks_list.append(loss_logger)
+
     return callbacks_list
 
 
