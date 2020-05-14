@@ -137,3 +137,5 @@ dmypy.json
 /dataset/data_lab/train/
 /dataset/data_lab/validation/
 /checkpoints/
+/dataset/dogs/
+/dataset/dogs_original/
