@@ -15,13 +15,12 @@ def main():
     settings = dataobjects.settings(priors.shape[0])
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
     model = train_network(settings, w)
-    # model_name = data_manager.save_model(model)
-    # evaluate_model(model, settings)
+    model_name = data_manager.save_model(model)
 
-    # loaded_model = data_manager.load_model("trained_models/2020_05_11_23_10")
-    # colorize_benchmark_images(loaded_model)           # Benchmark the model by colorizing 3 defined pictures
-    # # evaluate_model(loaded_model, settings)
 
+    # loaded_model = data_manager.load_model("checkpoints/mine_night_run")
+    # plotting.colorize_images_in_folder(settings, loaded_model, w, "dataset/dogs/colorize_images/")
+    # evaluate_model(model, settings) # See the test accuracy
 
 if __name__ == '__main__':
     main()

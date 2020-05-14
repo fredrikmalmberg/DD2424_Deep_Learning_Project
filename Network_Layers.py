@@ -154,19 +154,19 @@ def get_callback_functions(settings, model, class_weight):
     :return: List of callback functions used when training
     """
     callbacks_list = []
-    if settings.use_checkpoint:  # bool toggle for saving the best found model according to the validation set during training
+    if settings.use_checkpoint:
         time_started = datetime.now().strftime("%Y_%m_%d_%H_%M")
         callbacks_list.append(ModelCheckpoint('checkpoints/' + time_started,
                                               monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
-    if settings.use_plotting:  # bool toggle for plotting predicting (colorize) a picture after each epoch
+    if settings.use_plotting:
         callbacks_list.append(
             epoch_plot(settings, model, class_weight,
                        'dataset/dogs/validation/n02085620-Chihuahua/n02085620_199.jpg'))  # Todo make this dynamic
-    if settings.use_reducing_lr:  # bool toggle for reducing learning rate
+    if settings.use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
-    if settings.use_loss_plotting:  # Plots the loss and accuracy of the data during training
+    if settings.use_loss_plotting:
         loss_logger = CSVLogger('log.csv', append=True, separator=';')
         callbacks_list.append(loss_logger)
 

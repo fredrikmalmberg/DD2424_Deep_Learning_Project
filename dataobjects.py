@@ -16,24 +16,28 @@ class settings:
         self.kernel_initializer = "he_normal"  # Initialization method of the layers
 
         # Training settings
-        self.plot_random_imgs_from_generator = False            # Used for debugging
-        self.nr_epochs = 60
-        self.training_steps_per_epoch = 1764  # Nr dogs training images after split = 12348/7 = 1764
-        self.validation_steps_per_epoch = 882  # Nr dogs validation images after split = 6174/7 = 882
+        self.plot_random_imgs_from_generator = False  # Used for debugging
+        self.nr_epochs = 5
+        self.training_steps_per_epoch = 2  # Nr dogs training images after split = 12348/7 = 1764
+        self.validation_steps_per_epoch = 2  # Nr dogs validation images after split = 6174/7 = 882
         self.batch_size = 7
 
         # Callback
         self.patience = 10  # How many epochs it will wait for an improvement before triggering change
-        self.use_checkpoint = True
-        self.use_plotting = True
-        self.use_loss_plotting = True
-        self.use_reducing_lr = True
+        self.use_checkpoint = True  # Saving the best found model according to the validation set during training
+        self.use_plotting = False  # plotting predicting (colorize) a picture after each epoch
+        self.use_loss_plotting = True  # Plots the loss and accuracy of the data during training
+        self.use_reducing_lr = True  # For reducing learning rate
         self.learning_rate = 3e-5  # Learning rate of the training
         self.min_learning_rate = 3e-6  # The minimum the learning rate can reduce to
         self.learning_rate_reduction = 0.33  # How much the learning rate will be reduced, new_lr = lr * factor
 
         # Test settings
         self.test_step_size = 10  # Number iteration with batch size to traverse all data,  (data_samples//batch_size)
+
+        # Training a model from checkpoint
+        self.from_checkpoint = False  # True if loading from previous checkpoint
+        self.checkpoint_filepath = "checkpoints/2020_05_11_22_51"  # The path and name for the model
 
         self.data_directory = "dataset/dogs/"
         # self.data_directory = "../data/ILSVRC/Data/CLS-LOC/"
