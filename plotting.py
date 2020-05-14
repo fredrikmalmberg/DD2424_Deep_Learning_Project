@@ -36,14 +36,13 @@ class epoch_plot(keras.callbacks.Callback):
             plot_prediction(self.settings, self.model, self.w, self.img)
 
 
-def plot_prediction(settings, model, w, image_path):
+def plot_prediction(settings, model, w, image_path, savefig=False):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
 
     # And the image
     rgb_image = get_rgb_from_path(image_path)
-
     # Getting LAB channels from rgb image
     L, A, B = get_lab_channels_from_rgb(rgb_image)
 
@@ -90,27 +89,38 @@ def plot_prediction(settings, model, w, image_path):
     predicted_rgb_image = lab2rgb(lab_image)
     f = plt.figure(figsize=(10, 10))
     ax1 = f.add_subplot(131)
-    imgplot = plt.imshow(predicted_rgb_image)
+    predition = plt.imshow(predicted_rgb_image)
     plt.title("Combined prediction")
 
     # Just AB plotting
     lab_image = combine_lab_no_l_channel(A, B)
-    predicted_rgb_image = lab2rgb(lab_image)
+    predicted_rgb_image_ab = lab2rgb(lab_image)
     ax1 = f.add_subplot(132)
-    imgplot = plt.imshow(predicted_rgb_image)
+    predition_colors = plt.imshow(predicted_rgb_image_ab)
     plt.title("A B prediction")
+
 
     # Ground truth RGB
     ax1 = f.add_subplot(133)
     imgplot = plt.imshow(rgb_image)
     plt.title("Original Image")
 
-    plt.show()
+    # plt.show()
     print("Predicted values for L, A & B: ")
     print("L: {} to {}.".format(np.min(L), np.max(L)))
     print("A: {} to {}.".format(np.min(A), np.max(A)))
     print("B: {} to {}.".format(np.min(B), np.max(B)))
 
+    import re
+    # fig_name = re.sub('\..*', '', image_path.rsplit('/',1)[1])
+    fig_name = re.sub('\..*', '', image_path)
+
+    if savefig:
+        lucas = plt.figure()
+        pred_ab = plt.imshow(predicted_rgb_image_ab)
+        plt.savefig(str(fig_name) + '_pred_color.png')
+        pred_img = plt.imshow(predicted_rgb_image)
+        plt.savefig(str(fig_name) + '_pred.png')
     return
 
 
@@ -259,8 +269,9 @@ def plotting_demo():
 def colorize_images_in_folder(settings, model, w, folder_path):
     images = os.listdir(folder_path)
     for image in tqdm(images):
-        file_path = folder_path + image
-        plot_prediction(settings, model, w, file_path)
+        if 'pred' not in image:
+            file_path = folder_path + image
+            plot_prediction(settings, model, w, file_path, savefig=True)
 
 
 def plot_epoch_metrics():

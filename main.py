@@ -15,11 +15,11 @@ def main():
 
     settings = dataobjects.settings(priors.shape[0])
     data_manager.assert_data_is_setup(settings)  # Asserts that all necessary data files exists
-    model = train_network(settings, w)
-    model_name = data_manager.save_model(model)
+    # model = train_network(settings, w)
+    # model_name = data_manager.save_model(model)
 
-    # loaded_model = data_manager.load_model("checkpoints/mine_night_run")
-    # plotting.colorize_images_in_folder(settings, loaded_model, w, "dataset/dogs/colorize_images/")
+    loaded_model = data_manager.load_model("checkpoints/download_checkpoint")
+    plotting.colorize_images_in_folder(settings, loaded_model, w, "dataset/colorize_images/")
 
 
 if __name__ == '__main__':
