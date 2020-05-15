@@ -155,7 +155,7 @@ def train_pretrained_model(model,settings, w):
     print("Starting to train the pretrained network")
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
               validation_data=validate_generator, class_weight=w, validation_steps=settings.validation_steps_per_epoch,
-              callbacks=callbacks_list, c)
+              callbacks=callbacks_list)
     return model
 
 
