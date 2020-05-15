@@ -144,6 +144,20 @@ def train_network(settings, class_weight=None):
     print("Training done. Execution time for the training was: ", execution_time)
     return model
 
+def train_pretrained_model(model,settings, w):
+
+    train_generator = create_generator(settings, "train")
+    validate_generator = create_generator(settings, "validation")
+    checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True,
+                                 mode='max')
+    class_weight = w
+    callbacks_list = get_callback_functions(settings, model, class_weight)
+    print("Starting to train the pretrained network")
+    model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
+              validation_data=validate_generator, class_weight=w, validation_steps=settings.validation_steps_per_epoch,
+              callbacks=callbacks_list)
+    return model
+
 
 def get_callback_functions(settings, model, class_weight):
     """
@@ -161,12 +175,15 @@ def get_callback_functions(settings, model, class_weight):
     if settings.use_plotting:
         callbacks_list.append(
             epoch_plot(settings, model, class_weight,
-                       'dataset/dogs/validation/n02085620-Chihuahua/n02085620_199.jpg'))  # Todo make this dynamic
+                       'dataset/data/train_temp/n01440764/123.JPEG'))  # Todo make this dynamic
     if settings.use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
     if settings.use_loss_plotting:
+        f = open("filename.csv", "w")
+        f.truncate()
+        f.close()
         loss_logger = CSVLogger('log.csv', append=True, separator=';')
         callbacks_list.append(loss_logger)
 

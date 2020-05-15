@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 import dataobjects
-from Network_Layers import train_network
+from Network_Layers import evaluate_model, get_callback_functions, train_pretrained_model
 import data_manager
 
 warnings.filterwarnings('ignore', category=FutureWarning)
@@ -20,6 +20,10 @@ def main():
 
     loaded_model = data_manager.load_model("checkpoints/download_checkpoint")
     plotting.colorize_images_in_folder(settings, loaded_model, w, "dataset/colorize_images/")
+
+    # How to continue training
+    # model = load_model("checkpoints/best_weights_saved", settings, w)
+    # model = train_pretrained_model(model, settings, w)
 
 
 if __name__ == '__main__':

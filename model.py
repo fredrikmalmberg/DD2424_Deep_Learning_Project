@@ -88,5 +88,5 @@ def create_model(settings, class_weights, training=True):
         return ret
 
     adam = optimizers.Adam(learning_rate=settings.learning_rate, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
-    model.compile(loss=loss_function, optimizer=adam, metrics=["accuracy"])
+    model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
     return model

@@ -7,21 +7,24 @@ from skimage import io
 from skimage.color import lab2rgb, rgb2lab
 from tqdm import tqdm
 
-from data_manager import get_soft_enconding_ab
 from model import create_model
+import data_manager as data_manager
+import frechet_inception_difference as fid
+from data_manager import get_soft_enconding_ab
+from dataobjects import settings
 
 
-# def colorize_benchmark_images(model, show_fid=True):
-#     data = data_manager.get_benchmark_images()
-#     if show_fid:
-#         originals = fid.return_benchmark_originals()
-#     for i in range(data['input'].shape[0]):
-#         if show_fid:
-#             colorized = fid.return_colorized(model, data['input'][i][:, :, :])
-#             fid_val = fid.return_fid(colorized, originals[i])
-#             print("The Frechet Inception Difference is:", fid_val)
-#         plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
-#         plt.savefig('demo{}.png'.format(i), bbox_inches='tight')  # Lucas needs this to compile
+def colorize_benchmark_images(model, show_fid=True):
+    data = data_manager.get_benchmark_images()
+    if show_fid:
+        originals = fid.return_benchmark_originals()
+    for i in range(data['input'].shape[0]):
+        if show_fid:
+            colorized = fid.return_colorized(model, data['input'][i][:, :, :])
+            fid_val = fid.return_fid(colorized, originals[i])
+            print("The Frechet Inception Difference is:", fid_val)
+        plot_output(model, data['input'][i][:, :, :], data['target'][i][:, :, :])
+        plt.savefig('demo{}.png'.format(i), bbox_inches='tight')  # Lucas needs this to compile
 
 
 class epoch_plot(keras.callbacks.Callback):
@@ -36,7 +39,7 @@ class epoch_plot(keras.callbacks.Callback):
             plot_prediction(self.settings, self.model, self.w, self.img)
 
 
-def plot_prediction(settings, model, w, image_path, savefig=False):
+def plot_prediction(settings, model, w, image_path, savefig=False, save_image=False, T = 0.0):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
@@ -62,10 +65,35 @@ def plot_prediction(settings, model, w, image_path, savefig=False):
     img_predict = out[0, :, :, :]
 
     # Picking out the A and B values from the predicted bins
-    A = cs[np.argmax(img_predict, axis=2)][:, :, 0]
-    B = cs[np.argmax(img_predict, axis=2)][:, :, 1]
+    # If temperature is 0 we take mode otherwise annealed mean
+    if T == 0.:
+        A = cs[np.argmax(img_predict, axis=-1)][:, :, 0]
+        B = cs[np.argmax(img_predict, axis=-1)][:, :, 1]
+    else:
+        # ugly debug stuff
+        # z = img_predict[10, 10]
+        # plt.plot(cs[:, 0], img_predict[10, 10])
+        # plt.show()
+        # z_temp = np.exp(np.log(z + epsilon) / T) / (np.sum(np.exp(np.log(z + epsilon) / T)) + epsilon)
+        # plt.plot(cs[:, 0], z_temp)
+        # plt.show()
+        # print("predicted mode for A for pixel ", cs[np.argmax(z, axis=-1)][0])
+        # print("predicted mean for A for pixel", np.sum(np.multiply(z, cs[:, 0])))
+        # print("predicted annealed mean for A for pixel", np.sum(np.multiply(z_temp, cs[:, 0])))
+
+        import sys
+        epsilon = sys.float_info.epsilon
+        A = np.zeros(img_predict[:,:,0].shape)
+        B = np.zeros(img_predict[:,:,0].shape)
+        for h in range(img_predict.shape[0]):
+            for w in range(img_predict.shape[1]):
+                z = img_predict[h,w]
+                z_temp = np.exp(np.log(z + epsilon) / T) / (np.sum(np.exp(np.log(z + epsilon) / T)) + epsilon)
+                A[h,w] = np.sum(np.multiply(z_temp, cs[:,0]))
+                B[h,w] = np.sum(np.multiply(z_temp, cs[:,1]))
 
     # Some magic to match dimensions since we are losing a few pixels in the forward pass
+    # When john fixes the model, we wont be needing it anymore :D
     diff1 = A.shape[0] - L.shape[0]
     diff2 = A.shape[1] - L.shape[1]
 
@@ -121,6 +149,12 @@ def plot_prediction(settings, model, w, image_path, savefig=False):
         plt.savefig(str(fig_name) + '_pred_color.png')
         pred_img = plt.imshow(predicted_rgb_image)
         plt.savefig(str(fig_name) + '_pred.png')
+    elif save_image:
+        plt.imsave(str(fig_name) + '_pred_color.png', predicted_rgb_image)
+        plt.imsave(str(fig_name) + '_pred.png', predicted_rgb_image_ab)
+        # im_rgb = Image.fromarray(predicted_rgb_image).convert('RGB').save(str(fig_name) + '_pred_color.png')
+        # im_rgb_pred = Image.fromarray(predicted_rgb_image_ab).convert('RGB').save(str(fig_name) + '_pred.png')
+    plt.show()
     return
 
 
@@ -271,7 +305,7 @@ def colorize_images_in_folder(settings, model, w, folder_path):
     for image in tqdm(images):
         if 'pred' not in image:
             file_path = folder_path + image
-            plot_prediction(settings, model, w, file_path, savefig=True)
+            plot_prediction(settings, model, w, file_path, save_image=True)
 
 
 def plot_epoch_metrics():
