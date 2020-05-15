@@ -22,7 +22,7 @@ def create_model(settings, class_weights, training=True):
 
         class BetterSoftmax(layers.Layer):
             def __init__(self):
-                super(Reshape, self).__init__()
+                super(BetterSoftmax, self).__init__()
 
             def call(self, inputs):
                 print("this is input", inputs.shape)
