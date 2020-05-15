@@ -19,6 +19,16 @@ def create_model(settings, class_weights, training=True):
     else:
         regulizer = settings.regularizer
         initializer = settings.kernel_initializer
+
+        class BetterSoftmax(layers.Layer):
+            def __init__(self):
+                super(Reshape, self).__init__()
+
+            def call(self, inputs):
+                print("this is input", inputs.shape)
+                ret = K.softmax(inputs, axis=-1)
+                return ret
+
         model = models.Sequential()
         model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                                 padding='same', kernel_regularizer=regulizer, name='conv1_1',
@@ -73,20 +83,25 @@ def create_model(settings, class_weights, training=True):
                                 padding='same', kernel_regularizer=regulizer, name='conv8_2'))
         model.add(layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer=initializer, strides=(1, 1),
                                 padding='same', kernel_regularizer=regulizer, name='conv8_3'))
-        model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation='softmax', kernel_initializer=initializer,
+        model.add(layers.Conv2D(settings.nr_colors_space, (1, 1), activation=None, kernel_initializer='glorot_normal',
                                 strides=(1, 1), padding='same', dilation_rate=1, name='pred'))
+        model.add(BetterSoftmax())
 
     if not training:  # this is run when we are predicting
         model.add(layers.UpSampling2D((4, 4), interpolation='bilinear', name='upsample_2_predict'))
 
     def loss_function(y_true, y_pred):
-        c_w = tf.convert_to_tensor(class_weights)
-        q_star = K.argmax(y_true, axis=-1)
-        w_q = tf.gather(c_w, q_star)
-        y_pred_log = K.log(y_pred + K.epsilon())
-        ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
+        if settings.use_rebalancing:
+            c_w = tf.convert_to_tensor(class_weights)
+            q_star = K.argmax(y_true, axis=-1)
+            w_q = tf.gather(c_w, q_star)
+            y_pred_log = K.log(y_pred + K.epsilon())
+            ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
+        else:
+            y_pred_log = K.log(y_pred + K.epsilon())
+            ret = K.sum(tf.multiply(y_true, y_pred_log))
         return ret
 
     adam = optimizers.Adam(learning_rate=settings.learning_rate, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
-    model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
+    model.compile(loss=loss_function, optimizer=adam, metrics=["accuracy"])
     return model

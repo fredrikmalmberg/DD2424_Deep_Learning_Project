@@ -106,6 +106,22 @@ def pre_process(images, settings, unique_colors):
         imgplot = plt.imshow(rgb_image)
         plt.title("L Input")
         plt.show()
+
+    p = False
+    if p:
+        for i_nr in range(settings.batch_size):
+            print("shape of inputs", inputs.shape)
+            print("shape of targets", targets.shape)
+            #print("target for pixel", inputs[0, 20 * 4, 20 * 4, :])
+            print("target for pixel", np.argmax(targets[i_nr, 20, 20, :]))
+            print("target AB for pixel", unique_colors[np.argmax(targets[i_nr, 20, 20, :])])
+            #img = images[0] / 255.0  # Normalize data
+            images_lab = rgb2lab(images[i_nr])
+            print("LAB for pixel that is being processed", images_lab[20*4, 20*4, :])
+
+        p = False
+
+
     return inputs, targets
 
 
@@ -138,23 +154,24 @@ def train_network(settings, class_weight=None):
     print("Starting to train the network")
     start_time = datetime.now()
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
-              validation_data=validate_generator, validation_steps=settings.validation_steps_per_epoch,
+              validation_data=validate_generator, class_weight=class_weight, validation_steps=settings.validation_steps_per_epoch,
               callbacks=callbacks_list)
     execution_time = datetime.now() - start_time
     print("Training done. Execution time for the training was: ", execution_time)
     return model
 
-def train_pretrained_model(model,settings, w):
+
+def train_pretrained_model(model,settings, class_weight):
 
     train_generator = create_generator(settings, "train")
     validate_generator = create_generator(settings, "validation")
     checkpoint = ModelCheckpoint('checkpoints/best_weights', monitor='val_accuracy', verbose=1, save_best_only=True,
                                  mode='max')
-    class_weight = w
+
     callbacks_list = get_callback_functions(settings, model, class_weight)
     print("Starting to train the pretrained network")
     model.fit(x=train_generator, epochs=settings.nr_epochs, steps_per_epoch=settings.training_steps_per_epoch,
-              validation_data=validate_generator, class_weight=w, validation_steps=settings.validation_steps_per_epoch,
+              validation_data=validate_generator, class_weight=class_weight, validation_steps=settings.validation_steps_per_epoch,
               callbacks=callbacks_list)
     return model
 
@@ -170,12 +187,12 @@ def get_callback_functions(settings, model, class_weight):
     callbacks_list = []
     if settings.use_checkpoint:
         time_started = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        callbacks_list.append(ModelCheckpoint('checkpoints/' + time_started,
-                                              monitor='val_accuracy', verbose=1, save_best_only=True, mode='max'))
+        callbacks_list.append(ModelCheckpoint(settings.checkpoint_filepath,
+                                              monitor='val_loss', verbose=1, save_best_only=True, mode='auto'))
     if settings.use_plotting:
         callbacks_list.append(
             epoch_plot(settings, model, class_weight,
-                       'dataset/data/train_temp/n01440764/123.JPEG'))  # Todo make this dynamic
+                       settings.plot_image_path))  # Todo make this dynamic
     if settings.use_reducing_lr:
         callbacks_list.append(ReduceLROnPlateau('val_loss', factor=settings.learning_rate_reduction,
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,

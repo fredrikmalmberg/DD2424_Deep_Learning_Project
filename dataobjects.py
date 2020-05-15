@@ -21,11 +21,13 @@ class settings:
         self.training_steps_per_epoch = 2  # Nr dogs training images after split = 12348/7 = 1764
         self.validation_steps_per_epoch = 2  # Nr dogs validation images after split = 6174/7 = 882
         self.batch_size = 7
+        self.use_rebalancing = True
 
         # Callback
         self.patience = 10  # How many epochs it will wait for an improvement before triggering change
         self.use_checkpoint = True  # Saving the best found model according to the validation set during training
-        self.use_plotting = False  # plotting predicting (colorize) a picture after each epoch
+        self.use_plotting = True  # plotting predicting (colorize) a picture after each epoch
+        self.plot_image_path = 'dataset/data/train_temp/n01440764/123.JPEG'
         self.use_loss_plotting = True  # Plots the loss and accuracy of the data during training
         self.use_reducing_lr = True  # For reducing learning rate
         self.learning_rate = 3e-5  # Learning rate of the training
