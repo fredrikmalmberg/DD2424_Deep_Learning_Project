@@ -25,7 +25,6 @@ def create_model(settings, class_weights, training=True):
                 super(BetterSoftmax, self).__init__()
 
             def call(self, inputs):
-                print("this is input", inputs.shape)
                 ret = K.softmax(inputs, axis=-1)
                 return ret
 
@@ -99,7 +98,7 @@ def create_model(settings, class_weights, training=True):
             ret = -K.sum(tf.multiply(w_q, K.sum(tf.multiply(y_true, y_pred_log), axis=-1)))
         else:
             y_pred_log = K.log(y_pred + K.epsilon())
-            ret = K.sum(tf.multiply(y_true, y_pred_log))
+            ret = -K.sum(tf.multiply(y_true, y_pred_log))
         return ret
 
     adam = optimizers.Adam(learning_rate=settings.learning_rate, beta_1=0.9, beta_2=0.99, epsilon=1e-07)
