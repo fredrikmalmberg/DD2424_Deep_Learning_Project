@@ -198,6 +198,9 @@ def get_callback_functions(settings, model, class_weight):
                                                 patience=settings.patience, min_lr=settings.min_learning_rate,
                                                 verbose=1))
     if settings.use_loss_plotting:
+        f = open("filename.csv", "w")
+        f.truncate()
+        f.close()
         loss_logger = CSVLogger('log.csv', append=True, separator=';')
         callbacks_list.append(loss_logger)
 

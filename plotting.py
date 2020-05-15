@@ -5,9 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import io
 from skimage.color import lab2rgb, rgb2lab
+from tqdm import tqdm
+
 from model import create_model
 import data_manager as data_manager
 import frechet_inception_difference as fid
+from data_manager import get_soft_enconding_ab
 from dataobjects import settings
 
 
@@ -36,7 +39,7 @@ class epoch_plot(keras.callbacks.Callback):
             plot_prediction(self.settings, self.model, self.w, self.img)
 
 
-def plot_prediction(settings, model, w, image_path, savefig=False, T = 0.0):
+def plot_prediction(settings, model, w, image_path, savefig=False, save_image=False, T = 0.0):
     # This functions makes a prediction given an image path and plots it
     # Loading the color space bins
     cs = np.load('dataset/data/color_space.npy')
@@ -146,7 +149,11 @@ def plot_prediction(settings, model, w, image_path, savefig=False, T = 0.0):
         plt.savefig(str(fig_name) + '_pred_color.png')
         pred_img = plt.imshow(predicted_rgb_image)
         plt.savefig(str(fig_name) + '_pred.png')
-
+    elif save_image:
+        plt.imsave(str(fig_name) + '_pred_color.png', predicted_rgb_image)
+        plt.imsave(str(fig_name) + '_pred.png', predicted_rgb_image_ab)
+        # im_rgb = Image.fromarray(predicted_rgb_image).convert('RGB').save(str(fig_name) + '_pred_color.png')
+        # im_rgb_pred = Image.fromarray(predicted_rgb_image_ab).convert('RGB').save(str(fig_name) + '_pred.png')
     plt.show()
     return
 
@@ -298,7 +305,7 @@ def colorize_images_in_folder(settings, model, w, folder_path):
     for image in tqdm(images):
         if 'pred' not in image:
             file_path = folder_path + image
-            plot_prediction(settings, model, w, file_path, savefig=True)
+            plot_prediction(settings, model, w, file_path, save_image=True)
 
 
 def plot_epoch_metrics():
